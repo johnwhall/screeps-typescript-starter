@@ -1,8 +1,14 @@
-import * as CreepManager from "./components/creeps/creepManager";
 import * as Config from "./config/config";
 
 import * as Profiler from "screeps-profiler";
 import { log } from "./lib/logger/log";
+
+import * as RemotableModule from "./remotes/remotable";
+import * as RemotableContainerModule from "./remotes/remotable-container";
+import * as FlagModule from "./flags/flag";
+import * as StructureFlagModule from "./flags/structure-flag";
+
+import { RemotableSource } from "./remotes/remotable-source";
 
 // Any code written outside the `loop()` method is executed only when the
 // Screeps system reloads your script.
@@ -15,37 +21,37 @@ import { log } from "./lib/logger/log";
 // remove it on deploy
 // Start the profiler
 if (Config.USE_PROFILER) {
-  Profiler.enable();
+    Profiler.enable();
 }
 
-log.info(`Scripts bootstrapped`);
+log.debug(`Scripts bootstrapped`);
 if (__REVISION__) {
-  log.info(`Revision ID: ${__REVISION__}`);
+    log.debug(`Revision ID: ${__REVISION__}`);
 }
+
+RemotableModule.init();
+// RemoteSource.init();
+RemotableContainerModule.init();
+FlagModule.init();
+StructureFlagModule.init();
 
 function mloop() {
-  // Check memory for null or out of bounds custom objects
-  if (!Memory.uuid || Memory.uuid > 100) {
-    Memory.uuid = 0;
-  }
+    for (let name in Memory.creeps) if (!Game.creeps[name]) { console.log('Clearing non-existing creep memory:', name); delete Memory.creeps[name]; }
+    for (let name in Memory.flags) if (!Game.flags[name]) { console.log('Clearing non-existing flag memory:', name); delete Memory.flags[name]; }
+    _.forEach(Game.flags, (f) => f.update());
 
-  for (const i in Game.rooms) {
-    const room: Room = Game.rooms[i];
-
-    CreepManager.run(room);
-
-    // Clears any non-existing creep memory.
-    for (const name in Memory.creeps) {
-      const creep: any = Memory.creeps[name];
-
-      if (creep.room === room.name) {
-        if (!Game.creeps[name]) {
-          log.info("Clearing non-existing creep memory:", name);
-          delete Memory.creeps[name];
+    _.forEach(Game.rooms, (r) => {
+        let flag: Flag|undefined = <Flag|undefined>r.find(FIND_FLAGS)[0];
+        if (flag === undefined) {
+            console.log("no flags");
+        } else {
+            console.log("flag " + flag.type + " remote: " + flag.remotable);
+            let remote: RemotableSource = <RemotableSource>flag.remotable;
+            console.log("remote.pos: " + remote.pos);
+            console.log("remote.room: " + remote.room);
+            console.log("remote.liveObject: " + remote.liveObject);
         }
-      }
-    }
-  }
+    });
 }
 
 /**

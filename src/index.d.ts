@@ -1,9 +1,4 @@
-// memory extension samples
-interface CreepMemory {
-  role: string;
-  room: string;
-  working: boolean;
-}
+// import { StationaryHarvestJob } from "jobs/stationary-harvest-job";
 
 // add objects to `global` here
 declare namespace NodeJS {
@@ -12,9 +7,13 @@ declare namespace NodeJS {
   }
 }
 
-interface Memory {
-  uuid: number;
-  log: any;
-}
-
 declare const __REVISION__: string
+
+interface CreepMemory { [name: string]: any }
+// interface CreepMemory {
+//   job: StationaryHarvestJob;
+// }
+
+interface FlagMemory { [name: string]: any }
+interface SpawnMemory { [name: string]: any }
+interface RoomMemory { [name: string]: any }
