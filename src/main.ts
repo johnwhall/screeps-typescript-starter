@@ -2,6 +2,7 @@ import * as Config from "./config/config";
 
 import * as Profiler from "screeps-profiler";
 import { log } from "./lib/logger/log";
+import { log, exceptionColor, color } from "./lib/logger/log";
 
 import * as FlagModule from "./flags/flag";
 import { FlagType } from "./flags/flag";
@@ -78,8 +79,8 @@ function mloop() {
             new RoomVisual(cs.pos.roomName).text(`${cs.progress} / ${cs.progressTotal}`, cs.pos.x, cs.pos.y + 0.6, { font: 0.35 });
         });
     } catch (e) {
-        if (e instanceof Error) console.log(e.stack);
-        else console.log(e);
+        if (e instanceof Error) log.trace(e);
+        else console.log(color(e, exceptionColor));
     }
 }
 

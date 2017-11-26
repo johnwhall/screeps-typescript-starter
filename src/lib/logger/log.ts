@@ -3,7 +3,8 @@ import * as Config from "../../config/config";
 import { LogLevels } from "./logLevels";
 
 // <caller> (<source>:<line>:<column>)
-const stackLineRe = /([^ ]*) \(([^:]*):([0-9]*):([0-9]*)\)/;
+const stackLineRe = /at ([^ ]*)(.*):([0-9]*):([0-9]*)\)?$/;
+export const exceptionColor = "#E79DA7";
 
 interface SourcePos {
   compiled: string;
@@ -23,11 +24,11 @@ export function resolve(fileLine: string): SourcePos {
   const pos = { column: parseInt(split[4], 10), line: parseInt(split[3], 10) };
 
   const original = Log.sourceMap.originalPositionFor(pos);
-  const line = `${split[1]} (${original.source}:${original.line})`;
+  const line = `    at ${split[1]} (${original.source}:${original.line})`;
   const out = {
       caller: split[1],
       compiled: fileLine,
-      final: line,
+      final: original.source ? line : "",
       line: original.line,
       original: line,
       path: original.source,
@@ -44,7 +45,7 @@ function makeVSCLink(pos: SourcePos): string {
   return link(vscUrl(pos.path, `L${pos.line.toString()}`), pos.original);
 }
 
-function color(str: string, color: string): string {
+export function color(str: string, color: string): string {
   return `<font color='${color}'>${str}</font>`;
 }
 
@@ -178,7 +179,7 @@ export class Log {
       return stack;
     }
 
-    return _.map(stack.split("\n").map(resolve), "final").join("\n");
+    return _.map(_.filter(_.map(stack.split("\n").map(resolve), "final"), _.identity), (line) => color(<string>line, exceptionColor)).join("\n");
   }
 
   private adjustFileLine(visibleText: string, line: string): string {
