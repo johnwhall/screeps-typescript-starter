@@ -1,5 +1,6 @@
 import { Job } from "./job";
-import { RemotableSource } from "../remotes/remotable-source";
+import { RemoteSource } from "../remotes/remote-source";
+import { FlagType } from "../flags/flag";
 
 enum Phase {
     MOVE,
@@ -7,10 +8,10 @@ enum Phase {
 }
 
 export class StationaryHarvestJob extends Job {
-    private _source: RemotableSource;
+    private _source: RemoteSource;
     private _phase: Phase;
 
-    constructor(creep: Creep, source: RemotableSource, phase?: Phase) {
+    constructor(creep: Creep, source: RemoteSource, phase?: Phase) {
         super("stationary-harvest", creep);
         this._source = source;
         this._phase = phase || Phase.MOVE;
@@ -33,16 +34,18 @@ export class StationaryHarvestJob extends Job {
     }
 
     save(): void {
-        let whereId: string =
+        this.creep.memory.job = {
+            name: this.name,
+            flag: this._source.flag.name,
+            phase: this._phase,
+        };
     }
 
-    static recover(creep: Creep): StationaryHarvestJob {
-        let whereId: string = creep.memory.job.whereId;
-        let where: Flag|Source|null = Game.getObjectById(whereId);
-        let remotableSource: RemotableSource;
-        if (where == null) throw "Unable to find where (id: " + whereId + ") for staionary harvest job for creep " + creep.name;
-        if (where instanceof Flag) remotableSource = <RemotableSource>where.remotable;
-        else remotableSource = where;
-        return new StationaryHarvestJob(creep, remotableSource, creep.memory.job.phase);
+    static load(creep: Creep): StationaryHarvestJob {
+        let flagName: string = creep.memory.job.flag;
+        let flag: Flag|undefined = Game.flags[flagName];
+        if (flag === undefined) throw `Unable to locate flag ${flagName} for stationary harvest job for creep ${creep.name}`;
+        if (flag.type != FlagType.FLAG_SOURCE) throw `Incorrect flag type ${flag.type} for flag ${flagName} for stationary harvest job for creep ${creep.name}`;
+        return new StationaryHarvestJob(creep, <RemoteSource>flag.remote, creep.memory.job.phase);
     }
 }

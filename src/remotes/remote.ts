@@ -1,10 +1,8 @@
-import { Remotable } from "./remotable";
-
-export abstract class Remote<T extends RoomObject> implements RoomObject, Remotable<T> {
+export abstract class Remote<T extends RoomObject> {
     abstract liveObject: T | undefined;
     abstract update(): void;
+    abstract shouldRemove(): boolean;
 
-    prototype: RoomObject;
     readonly flag: Flag;
 
     constructor (flag: Flag) {

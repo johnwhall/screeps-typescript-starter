@@ -1,27 +1,40 @@
-import { Remotable } from "../remotes/remotable";
+import { Remote } from "../remotes/remote";
 import { RemoteContainer } from "../remotes/remote-container";
 import { RemoteSource } from "../remotes/remote-source";
+import { RemoteConstructionSite } from "../remotes/remote-construction-site";
 
 export enum FlagType {
-    FLAG_STRUCTURE,
-    FLAG_SOURCE,
-    FLAG_SCOUT,
+    FLAG_STRUCTURE = "FLAG_STRUCTURE",
+    FLAG_SOURCE = "FLAG_SOURCE",
+    FLAG_SCOUT = "FLAG_SCOUT",
+    FLAG_CONSTRUCTION_SITE = "FLAG_CONSTRUCTION_SITE",
 }
 
 declare global {
     interface Flag {
         readonly type: FlagType;
         readonly assignedRoomName: string;
-        readonly remotable: Remotable<RoomObject>;
+        readonly remote: Remote<RoomObject>;
+        checkRemove(): boolean;
         update(): void;
     }
 }
 
+export function nextFlagUid(): string {
+    let prevTime = Number(Memory.previousFlagUidTime) || Game.time;
+    let num = (Number(Memory.previousFlagUidNum) || 0) + 1;
+    if (prevTime != Game.time) num = 1;
+    let uid = Game.time + "-" + num;
+    Memory.previousFlagUidTime = Game.time;
+    Memory.previousFlagUidNum = num;
+    return uid;
+}
+
 export function init() {
-    // <name>           ::= "structure" <structure-type> <assigned-room-name> <uuid>
-    //                    | "construction" <structure-type> <assigned-room-name> <uuid>
-    //                    | "source" <assigned-room-name> <uuid>
-    //                    | "scout" <uuid>
+    // <name>           ::= "structure" <structure-type> <assigned-room-name> <uid>
+    //                    | "construction" <structure-type> <assigned-room-name> <uid>
+    //                    | "source" <assigned-room-name> <uid>
+    //                    | "scout" <uid>
     // <structure-type> ::= "container" | "road"
     function parseName(flag: any) {
         let parts: string[] = flag.name.split(" ");
@@ -35,8 +48,11 @@ export function init() {
             case "scout":
                 flag._type = FlagType.FLAG_SCOUT;
                 break;
+            case "construction":
+                [flag._type, flag._assignedRoomName] = [FlagType.FLAG_CONSTRUCTION_SITE, parts[2]];
+                break;
             default:
-                throw "Unknown flag type " + parts[0] + " in name " + flag.name;
+                throw new Error("Unknown flag type " + parts[0] + " in name " + flag.name);
         }
     }
 
@@ -58,28 +74,39 @@ export function init() {
         });
     }
 
-    if (!Flag.prototype.remotable) {
-        Object.defineProperty(Flag.prototype, "remotable", {
+    if (!Flag.prototype.remote) {
+        Object.defineProperty(Flag.prototype, "remote", {
             get: function () {
-                if (this._remotable === undefined) {
+                if (this._remote === undefined) {
                     switch (this.type) {
                         case FlagType.FLAG_STRUCTURE:
                             switch (this.structureType) {
-                                case STRUCTURE_CONTAINER: this._remotable = new RemoteContainer(this); break;
-                                default: throw "Remotable not yet implemented for flag structure type " + this.structureType + " (flag: " + this.name + ")";
+                                case STRUCTURE_CONTAINER: this._remote = new RemoteContainer(this); break;
+                                default: throw new Error("Remote not yet implemented for flag structure type " + this.structureType + " (flag: " + this.name + ")");
                             }
                             break;
-                        case FlagType.FLAG_SOURCE: this._remotable = new RemoteSource(this); break;
+                        case FlagType.FLAG_SOURCE: this._remote = new RemoteSource(this); break;
+                        case FlagType.FLAG_CONSTRUCTION_SITE: this._remote = new RemoteConstructionSite(this); break;
                         default:
-                            throw "Remotable not yet implemented for flag type " + this.type + " (flag: " + this.name + ")";
+                            throw new Error("Remote not yet implemented for flag type " + this.type + " (flag: " + this.name + ")");
                     }
                 }
-                return this._remotable;
+                return this._remote;
             }
         });
     }
 
     if (!Flag.prototype.update) {
-        Flag.prototype.update = function() { this.remotable.update(); }
+        Flag.prototype.update = function() { this.remote.update(); }
+    }
+
+    if (!Flag.prototype.checkRemove) {
+        Flag.prototype.checkRemove = function() {
+            if (this.remote !== undefined && this.remote.shouldRemove()) {
+                this.remove();
+                return true;
+            }
+            return false;
+        }
     }
 }

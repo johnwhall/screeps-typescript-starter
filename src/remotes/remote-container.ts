@@ -18,7 +18,9 @@ export class RemoteContainer extends Remote<StructureContainer> {
 
     update(): void {
         if (this.liveObject == undefined) return;
-        this.flag.memory._lastKnownEnergy = this.liveObject.energy;
-        this.flag.memory._lastKnownEnergyCapacity = this.liveObject.energyCapacity;
+        this.flag.memory._lastKnownEnergy = this.liveObject.store[RESOURCE_ENERGY];
+        this.flag.memory._lastKnownEnergyCapacity = this.liveObject.storeCapacity - _.sum(this.liveObject.store) + this.liveObject.store[RESOURCE_ENERGY];
     }
+
+    shouldRemove(): boolean { return false; }
 }

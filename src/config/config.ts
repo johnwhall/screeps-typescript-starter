@@ -20,7 +20,7 @@ export const DEFAULT_MIN_LIFE_BEFORE_NEEDS_REFILL: number = 700;
 /**
  * Debug level for log output
  */
-export const LOG_LEVEL: number = LogLevels.DEBUG;
+export const LOG_LEVEL: number = LogLevels.INFO;
 
 /**
  * Prepend log output with current tick number.

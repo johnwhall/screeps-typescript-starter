@@ -9,5 +9,6 @@ export class RemoteSource extends Remote<Source> {
     }
 
     update(): void {}
+    shouldRemove(): boolean { return false; }
 
 }
