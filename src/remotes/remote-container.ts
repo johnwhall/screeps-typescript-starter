@@ -23,4 +23,9 @@ export class RemoteContainer extends Remote<StructureContainer> {
     }
 
     shouldRemove(): boolean { return false; }
+
+    toString(): string {
+        if (this.liveObject) return this.liveObject.toString();
+        else return `[invisible container at ${this.pos}]`;
+    }
 }

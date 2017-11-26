@@ -60,8 +60,13 @@ export function init() {
                 return this._homeRoom;
             },
             set: function(room: Room | undefined) {
-                if (room === undefined) delete this.memory.homeRoom;
-                else this.memory.homeRoom = room.name;
+                if (room === undefined) {
+                    delete this.memory.homeRoom;
+                    delete this._homeRoom;
+                } else {
+                    this.memory.homeRoom = room.name;
+                    this._homeRoom = room;
+                }
             }
         });
     }

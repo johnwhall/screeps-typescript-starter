@@ -14,7 +14,9 @@ declare global {
     interface Flag {
         readonly type: FlagType;
         readonly assignedRoomName: string;
+        readonly assignedRoom: Room | undefined;
         readonly remote: Remote<RoomObject>;
+        readonly removed: boolean;
         checkRemove(): boolean;
         update(): void;
     }
@@ -74,6 +76,12 @@ export function init() {
         });
     }
 
+    if (!Flag.prototype.assignedRoom) {
+        Object.defineProperty(Flag.prototype, "assignedRoom", {
+            get: function() { return Game.rooms[this.assignedRoomName]; }
+        });
+    }
+
     if (!Flag.prototype.remote) {
         Object.defineProperty(Flag.prototype, "remote", {
             get: function () {
@@ -98,6 +106,27 @@ export function init() {
 
     if (!Flag.prototype.update) {
         Flag.prototype.update = function() { this.remote.update(); }
+    }
+
+    if (!(<any>Flag.prototype)._remove) {
+        (<any>Flag.prototype)._remove = Flag.prototype.remove;
+        Flag.prototype.remove = function(): OK {
+            (<any>this)._removed = true;
+            if (this.room !== undefined) {
+                let idx: number = this.room.assignedFlags.indexOf(this);
+                if (idx >= 0) this.room.assignedFlags.splice(idx, 1);
+            }
+            return (<any>this)._remove();
+        }
+    }
+
+    if (!Flag.prototype.removed) {
+        Object.defineProperty(Flag.prototype, "removed", {
+            get: function() {
+                if (this._removed === undefined) this._removed = false;
+                return this._removed;
+            }
+        })
     }
 
     if (!Flag.prototype.checkRemove) {

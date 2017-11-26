@@ -3,7 +3,11 @@ import { Caste, selectParts } from "./caste";
 
 declare global {
     interface Room {
+        readonly assignedCreeps: Creep[],
+        readonly spawningCreeps: Creep[],
+        readonly assignedFlags: Flag[],
         spawnQueue: SpawnQueueItem[];
+        assignedCreepsForCaste(caste: Caste): Creep[],
         casteTarget(caste: Caste, newTarget?: number): number;
         queueFromTargets(): void;
         spawnFromQueue(): void;
@@ -11,6 +15,40 @@ declare global {
 }
 
 export function init() {
+    if (!Room.prototype.assignedCreeps) {
+        Object.defineProperty(Room.prototype, "assignedCreeps", {
+            get: function() {
+                if (this._assignedCreeps === undefined) this._assignedCreeps = _.filter(Game.creeps, (c) => !c.spawning && c.homeRoom == this);
+                return this._assignedCreeps;
+            }
+        });
+    }
+
+    if (!Room.prototype.spawningCreeps) {
+        Object.defineProperty(Room.prototype, "spawningCreeps", {
+            get: function() {
+                if (this._spawningCreeps === undefined) this._spawningCreeps = _.filter(Game.creeps, (c) => c.spawning && c.homeRoom == this);
+                return this._spawningCreeps;
+            }
+        });
+    }
+
+    if (!Room.prototype.assignedCreepsForCaste) {
+        Room.prototype.assignedCreepsForCaste = function(caste: Caste): Creep[] {
+            if (this._assignedCreepsForCaste === undefined) this._assignedCreepsForCaste = _.groupBy(this.assignedCreeps, "caste");
+            return this._assignedCreepsForCaste[caste];
+        }
+    }
+
+    if (!Room.prototype.assignedFlags) {
+        Object.defineProperty(Room.prototype, "assignedFlags", {
+            get: function() {
+                if (this._assignedFlags === undefined) this._assignedFlags = _.filter(Game.flags, (f) => f.room == this && !f.removed);
+                return this._assignedFlags;
+            }
+        });
+    }
+
     if (!Room.prototype.spawnQueue) {
         Object.defineProperty(Room.prototype, "spawnQueue", {
             get: function() {

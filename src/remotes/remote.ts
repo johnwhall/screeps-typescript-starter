@@ -2,6 +2,7 @@ export abstract class Remote<T extends RoomObject> {
     abstract liveObject: T | undefined;
     abstract update(): void;
     abstract shouldRemove(): boolean;
+    abstract toString(): string;
 
     readonly flag: Flag;
 

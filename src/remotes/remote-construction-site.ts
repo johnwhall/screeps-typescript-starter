@@ -30,4 +30,9 @@ export class RemoteConstructionSite extends Remote<ConstructionSite> {
         // This seems valid for all static remotes (e.g. structures), but not for moveable ones (e.g. creeps).
         return this.room !== undefined && this.liveObject === undefined;
     }
+
+    toString(): string {
+        if (this.liveObject) return this.liveObject.toString();
+        else return `[invisible ${this.structureType} construction site at ${this.pos}]`;
+    }
 }

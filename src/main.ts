@@ -45,34 +45,32 @@ function mloop() {
         for (let name in Memory.creeps) if (!Game.creeps[name]) { console.log('Clearing non-existing creep memory:', name); delete Memory.creeps[name]; }
         for (let name in Memory.flags) if (!Game.flags[name]) { console.log('Clearing non-existing flag memory:', name); delete Memory.flags[name]; }
 
-        // Flags remain in Game.flags after removal. Always use myFlags, or else I have to add an isRemoved field to Flag!
-        let myFlags = _.filter(Game.flags, (f) => !f.checkRemove());
-        _.forEach(myFlags, (f) => f.update());
+        _.forEach(Game.flags, (f) => !f.checkRemove() && f.update() );
 
         _.forEach(Game.rooms, (room) => {
             if (!room.controller || !room.controller.my) return;
 
             _.forEach(room.find(FIND_MY_CONSTRUCTION_SITES), (cs: ConstructionSite) => { if (!cs.flag) createConstructionSiteFlag(cs.pos, room.name) });
 
-            let roomFlags = _.filter(myFlags, (f) => f.assignedRoomName == room.name);
-            let roomRemoteSources: RemoteSource[] = _.map(roomFlags.filter((f) => f.type == FlagType.FLAG_SOURCE), "remote");
+            _.forEach(room.assignedCreepsForCaste(Caste.STATIONARY_HARVESTER), (c) => { if (c.job && c.job.name == "stationary-harvest") (<StationaryHarvestJob>c.job).source.covered = true; });
 
-            let roomCreeps = _.filter(Game.creeps, (c) => c.homeRoom == room);
-            let roomBornCreeps = roomCreeps.filter((c) => !c.spawning);
-            let roomBornStationaryHarvesters = roomBornCreeps.filter((c) => c.caste == Caste.STATIONARY_HARVESTER);
-            let roomBornUnemployedStationaryHarvesters = roomBornStationaryHarvesters.filter((c) => !c.job);
+            let roomRemoteSources: RemoteSource[] = _.map(room.assignedFlags.filter((f) => f.type == FlagType.FLAG_SOURCE), "remote");
+            let roomCoveredRemoteSources = _.filter(roomRemoteSources, (s) => s.covered);
+            let roomUncoveredRemoteSources = _.filter(roomRemoteSources, (s) => !s.covered);
 
-            if (roomRemoteSources.length > 0) {
-                _.forEach(roomBornUnemployedStationaryHarvesters, (c) => {
-                    c.job = new StationaryHarvestJob(c, roomRemoteSources[0]);
-                });
-            }
+            _.forEach(room.assignedCreepsForCaste(Caste.STATIONARY_HARVESTER).filter((c) => !c.job), (c) => {
+                if (roomUncoveredRemoteSources.length == 0) return false;
+                let job = new StationaryHarvestJob(c, roomUncoveredRemoteSources[0]);
+                console.log(`Ordering ${c.name} to harvest from ${job.source}`);
+                c.job = job;
+                roomCoveredRemoteSources.push(roomUncoveredRemoteSources.splice(0, 1)[0]);
+            });
 
             room.queueFromTargets();
             room.spawnFromQueue();
         });
 
-        _.forEach(Game.creeps, (c) => console.log(`creep ${c.name} memory: ${JSON.stringify(c.memory)}`));
+        // _.forEach(Game.creeps, (c) => console.log(`creep ${c.name} memory: ${JSON.stringify(c.memory)}`));
 
         _.forEach(Game.creeps, (c) => c.doJob());
 

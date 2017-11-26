@@ -1,6 +1,7 @@
 import { Remote } from "./remote";
 
 export class RemoteSource extends Remote<Source> {
+    covered: boolean = false;
     private _liveObject: Source;
 
     get liveObject() : Source|undefined {
@@ -10,5 +11,8 @@ export class RemoteSource extends Remote<Source> {
 
     update(): void {}
     shouldRemove(): boolean { return false; }
-
+    toString(): string {
+        if (this.liveObject) return this.liveObject.toString();
+        else return `[invisible source at ${this.pos}]`;
+    }
 }
