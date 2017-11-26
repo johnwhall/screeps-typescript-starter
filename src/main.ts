@@ -1,7 +1,6 @@
 import * as Config from "./config/config";
 
 import * as Profiler from "screeps-profiler";
-import { log } from "./lib/logger/log";
 import { log, exceptionColor, color } from "./lib/logger/log";
 
 import * as FlagModule from "./flags/flag";
@@ -43,10 +42,11 @@ RoomModule.init();
 
 function mloop() {
     try {
+        // TODO: do this for rooms and spawns also?
         for (let name in Memory.creeps) if (!Game.creeps[name]) { console.log('Clearing non-existing creep memory:', name); delete Memory.creeps[name]; }
         for (let name in Memory.flags) if (!Game.flags[name]) { console.log('Clearing non-existing flag memory:', name); delete Memory.flags[name]; }
 
-        _.forEach(Game.flags, (f) => !f.checkRemove() && f.update() );
+        _.forEach(Game.flags, (f) => !f.checkRemove() && f.update());
 
         _.forEach(Game.rooms, (room) => {
             if (!room.controller || !room.controller.my) return;

@@ -4,7 +4,7 @@ export class RemoteConstructionSite extends Remote<ConstructionSite> {
     private _liveObject: ConstructionSite;
 
     get progress(): number {
-        return this.flag.memory._lastKnownProgress;
+        return this.flag.memory.lastKnownProgress;
     }
 
     get progressTotal(): number {
@@ -22,7 +22,7 @@ export class RemoteConstructionSite extends Remote<ConstructionSite> {
 
     update(): void {
         if (this.liveObject == undefined) return;
-        this.flag.memory._lastKnownProgress = this.liveObject.progress;
+        this.flag.memory.lastKnownProgress = this.liveObject.progress;
     }
 
     shouldRemove(): boolean {

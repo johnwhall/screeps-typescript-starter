@@ -112,10 +112,7 @@ export function init() {
         (<any>Flag.prototype)._remove = Flag.prototype.remove;
         Flag.prototype.remove = function(): OK {
             (<any>this)._removed = true;
-            if (this.room !== undefined) {
-                let idx: number = this.room.assignedFlags.indexOf(this);
-                if (idx >= 0) this.room.assignedFlags.splice(idx, 1);
-            }
+            if (this.assignedRoom !== undefined) this.assignedRoom.assignedFlagRemoved(this);
             return (<any>this)._remove();
         }
     }

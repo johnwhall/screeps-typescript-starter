@@ -1,13 +1,17 @@
 import { SpawnQueueItem } from "./spawn-queue-item";
 import { Caste, selectParts } from "./caste";
+import { VirtualFlag } from "./flags/virtual-flag";
 
 declare global {
     interface Room {
-        readonly assignedCreeps: Creep[],
-        readonly spawningCreeps: Creep[],
-        readonly assignedFlags: Flag[],
+        readonly assignedCreeps: Creep[];
+        readonly spawningCreeps: Creep[];
+        readonly assignedFlags: Flag[];
+        readonly virtualFlags: VirtualFlag[]; // expensive, avoid calling
         spawnQueue: SpawnQueueItem[];
-        assignedCreepsForCaste(caste: Caste): Creep[],
+        assignedCreepsForCaste(caste: Caste): Creep[];
+        assignedFlagRemoved(flag: Flag): void;
+        createVirtualFlags(): void;
         casteTarget(caste: Caste, newTarget?: number): number;
         queueFromTargets(): void;
         spawnFromQueue(): void;
@@ -17,7 +21,7 @@ declare global {
 export function init() {
     if (!Room.prototype.assignedCreeps) {
         Object.defineProperty(Room.prototype, "assignedCreeps", {
-            get: function() {
+            get: function () {
                 if (this._assignedCreeps === undefined) this._assignedCreeps = _.filter(Game.creeps, (c) => !c.spawning && c.homeRoom == this);
                 return this._assignedCreeps;
             }
@@ -26,7 +30,7 @@ export function init() {
 
     if (!Room.prototype.spawningCreeps) {
         Object.defineProperty(Room.prototype, "spawningCreeps", {
-            get: function() {
+            get: function () {
                 if (this._spawningCreeps === undefined) this._spawningCreeps = _.filter(Game.creeps, (c) => c.spawning && c.homeRoom == this);
                 return this._spawningCreeps;
             }
@@ -34,35 +38,69 @@ export function init() {
     }
 
     if (!Room.prototype.assignedCreepsForCaste) {
-        Room.prototype.assignedCreepsForCaste = function(caste: Caste): Creep[] {
+        Room.prototype.assignedCreepsForCaste = function (caste: Caste): Creep[] {
             if (this._assignedCreepsForCaste === undefined) this._assignedCreepsForCaste = _.groupBy(this.assignedCreeps, "caste");
-            return this._assignedCreepsForCaste[caste];
+            return this._assignedCreepsForCaste[caste] || [];
+        }
+    }
+
+    if (!Room.prototype.virtualFlags) {
+        Object.defineProperty(Room.prototype, "virtualFlags", {
+            get: function () {
+                // TODO: put virtual flags in Memory.rooms instead of on their own.
+                // Then we won't have to search through every virtual flag, only our own.
+                let flags = _.filter(Memory.virtualFlags, (_fMem, fName: string) => {
+                    let parts: string[] = fName.split(" ");
+                    return parts[parts.length - 2] == this.name;
+                });
+                return _.map(flags, (_fMem, fName:string) => new VirtualFlag(fName));
+            }
+        });
+    }
+
+    if (!Room.prototype.createVirtualFlags) {
+        Room.prototype.createVirtualFlags = function(): void {
+            throw new Error('virtual flags not implemented');
         }
     }
 
     if (!Room.prototype.assignedFlags) {
         Object.defineProperty(Room.prototype, "assignedFlags", {
-            get: function() {
-                if (this._assignedFlags === undefined) this._assignedFlags = _.filter(Game.flags, (f) => f.room == this && !f.removed);
+            get: function () {
+                if (this._assignedFlags === undefined) {
+                    let regularFlags = _.filter(Game.flags, (f) => f.room == this && !f.removed);
+                    this._assignedFlags = regularFlags.concat(this.virtualFlags);
+                }
                 return this._assignedFlags;
             }
         });
     }
 
+    if (!Room.prototype.assignedFlagRemoved) {
+        Room.prototype.assignedFlagRemoved = function (flag: Flag): void {
+            // Only handle this if _assignedFlags has been loaded
+            // If it hasn't been loaded yet, Flag.removed will prevent removed flags from being loaded
+            if (this._assignedFlags !== undefined) {
+                let idx = this._assignedFlags.indexOf(flag);
+                if (idx >= 0) this._assignedFlags.splice(idx, 1);
+            }
+        }
+    }
+
     if (!Room.prototype.spawnQueue) {
         Object.defineProperty(Room.prototype, "spawnQueue", {
-            get: function() {
+            get: function () {
                 if (this._spawnQueue === undefined) this._spawnQueue = this.memory.spawnQueue || [];
                 return this._spawnQueue;
             },
-            set: function(spawnQueue: SpawnQueueItem[]) {
+            set: function (spawnQueue: SpawnQueueItem[]) {
                 this.memory.spawnQueue = this._spawnQueue = spawnQueue;
             }
         });
     }
 
     if (!Room.prototype.casteTarget) {
-        Room.prototype.casteTarget = function(caste: Caste, newTarget?: number): number {
+        Room.prototype.casteTarget = function (caste: Caste, newTarget?: number): number {
             if (newTarget !== undefined && newTarget < 0) throw new Error(`Attempted to set negative target ${newTarget} for caste ${caste}`);
             if (this._casteTargets === undefined) this._casteTargets = this.memory.casteTargets || {};
             if (newTarget !== undefined) { this._casteTargets[caste] = newTarget; this.memory.casteTargets = this._casteTargets; }
@@ -72,7 +110,7 @@ export function init() {
     }
 
     if (!Room.prototype.queueFromTargets) {
-        Room.prototype.queueFromTargets = function() {
+        Room.prototype.queueFromTargets = function () {
             if (this.memory.spawnQueue === undefined) this.memory.spawnQueue = [];
             let ownedCreeps = _.groupBy(_.filter(Game.creeps, (c) => c.homeRoom == this), (c) => c.caste);
             let queuedCreeps = _.groupBy(_.filter(<SpawnQueueItem[]>this.spawnQueue, (sqi) => sqi.homeRoomName == this.name), (sqi) => sqi.caste);
@@ -91,10 +129,11 @@ export function init() {
     }
 
     if (!Room.prototype.spawnFromQueue) {
-        Room.prototype.spawnFromQueue = function() {
+        Room.prototype.spawnFromQueue = function () {
             if (this.spawnQueue.length == 0) return;
             _.forEach(this.find(FIND_MY_SPAWNS), (spawn: Spawn) => {
                 let item: SpawnQueueItem = this.spawnQueue[0];
+                if (!item) return;
                 let name = `${item.caste.toLowerCase().replace("_", " ")} ${Game.time}`;
                 if (spawn.spawnCreep(item.parts, name, { memory: item.memory }) == OK) {
                     console.log(`Room ${this.name} spawning new ${item.caste}: ${name} - ${item.parts} (cost: ${item.cost})`);
