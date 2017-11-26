@@ -1,17 +1,17 @@
 import { SpawnQueueItem } from "./spawn-queue-item";
 import { Caste, selectParts } from "./caste";
-import { VirtualFlag } from "./flags/virtual-flag";
+import { RemotableSource } from "./remotables/remotable";
+import { FlagType } from "./flags/flag";
 
 declare global {
     interface Room {
         readonly assignedCreeps: Creep[];
         readonly spawningCreeps: Creep[];
         readonly assignedFlags: Flag[];
-        readonly virtualFlags: VirtualFlag[]; // expensive, avoid calling
+        readonly assignedSources: RemotableSource[];
         spawnQueue: SpawnQueueItem[];
         assignedCreepsForCaste(caste: Caste): Creep[];
         assignedFlagRemoved(flag: Flag): void;
-        createVirtualFlags(): void;
         casteTarget(caste: Caste, newTarget?: number): number;
         queueFromTargets(): void;
         spawnFromQueue(): void;
@@ -44,32 +44,11 @@ export function init() {
         }
     }
 
-    if (!Room.prototype.virtualFlags) {
-        Object.defineProperty(Room.prototype, "virtualFlags", {
-            get: function () {
-                // TODO: put virtual flags in Memory.rooms instead of on their own.
-                // Then we won't have to search through every virtual flag, only our own.
-                let flags = _.filter(Memory.virtualFlags, (_fMem, fName: string) => {
-                    let parts: string[] = fName.split(" ");
-                    return parts[parts.length - 2] == this.name;
-                });
-                return _.map(flags, (_fMem, fName:string) => new VirtualFlag(fName));
-            }
-        });
-    }
-
-    if (!Room.prototype.createVirtualFlags) {
-        Room.prototype.createVirtualFlags = function(): void {
-            throw new Error('virtual flags not implemented');
-        }
-    }
-
     if (!Room.prototype.assignedFlags) {
         Object.defineProperty(Room.prototype, "assignedFlags", {
             get: function () {
                 if (this._assignedFlags === undefined) {
-                    let regularFlags = _.filter(Game.flags, (f) => f.room == this && !f.removed);
-                    this._assignedFlags = regularFlags.concat(this.virtualFlags);
+                    return _.filter(Game.flags, (f) => f.room == this && !f.removed);
                 }
                 return this._assignedFlags;
             }
@@ -85,6 +64,19 @@ export function init() {
                 if (idx >= 0) this._assignedFlags.splice(idx, 1);
             }
         }
+    }
+
+    if (!Room.prototype.assignedSources) {
+        Object.defineProperty(Room.prototype, "assignedSources", {
+            get: function () {
+                if (this._assignedSources === undefined) {
+                    let roomSources = _.pluck(this.find(FIND_SOURCES), "remotable");
+                    let flagSources = _.pluck(this.assignedFlags.filter((f: Flag) => f.type == FlagType.FLAG_SOURCE), "remote");
+                    this._assignedSources = _.unique(roomSources.concat(flagSources));
+                }
+                return this._assignedSources;
+            },
+        });
     }
 
     if (!Room.prototype.spawnQueue) {

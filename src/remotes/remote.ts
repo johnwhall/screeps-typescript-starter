@@ -1,6 +1,7 @@
-export abstract class Remote<T extends RoomObject> {
+import { Remotable } from "../remotables/remotable";
+
+export abstract class Remote<T extends RoomObject> implements Remotable<T> {
     abstract liveObject: T | undefined;
-    abstract update(): void;
     abstract shouldRemove(): boolean;
     abstract toString(): string;
 
@@ -14,5 +15,11 @@ export abstract class Remote<T extends RoomObject> {
 
     get room(): Room | undefined {
         return Game.rooms[this.pos.roomName];
+    }
+
+    update(): void { this.associate(); } // TODO: these objects are being recreated every tick anyway; why not just update in the constructor?
+
+    associate(): void {
+        if (this.liveObject !== undefined) (<any>this.liveObject).remotable = this;
     }
 }

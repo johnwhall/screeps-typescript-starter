@@ -113,6 +113,7 @@ export function init() {
         Flag.prototype.remove = function(): OK {
             (<any>this)._removed = true;
             if (this.assignedRoom !== undefined) this.assignedRoom.assignedFlagRemoved(this);
+            if (this.remote.liveObject !== undefined && (<any>this.remote.liveObject).remotable === this.remote) delete (<any>this.remote.liveObject).remotable;
             return (<any>this)._remove();
         }
     }

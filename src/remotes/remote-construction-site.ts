@@ -1,38 +1,24 @@
 import { Remote } from "./remote";
+import { RemotableConstructionSite } from "../remotables/remotable";
+import { LocalConstructionSite } from "../locals/local-construction-site";
 
-export class RemoteConstructionSite extends Remote<ConstructionSite> {
-    private _liveObject: ConstructionSite;
+// Construction sites are always visible, so this is just a wrapper for a LocalConstructionSite
+export class RemoteConstructionSite extends Remote<ConstructionSite> implements RemotableConstructionSite {
+    private _local: LocalConstructionSite;
 
-    get progress(): number {
-        return this.flag.memory.lastKnownProgress;
+    constructor(flag: Flag) {
+        super(flag);
+        let liveObject = _.filter(Game.constructionSites, (cs) => cs.pos.isEqualTo(this.pos))[0];
+        if (liveObject !== undefined) this._local = new LocalConstructionSite(liveObject);
     }
 
-    get progressTotal(): number {
-        return CONSTRUCTION_COST[this.flag.structureType];
-    }
-
-    get structureType(): StructureConstant {
-        return this.flag.structureType;
-    }
-
-    get liveObject(): ConstructionSite|undefined {
-        if (this.room == undefined) return undefined;
-        else return this._liveObject = <ConstructionSite>this.pos.lookFor(LOOK_CONSTRUCTION_SITES)[0];
-    }
-
-    update(): void {
-        if (this.liveObject == undefined) return;
-        this.flag.memory.lastKnownProgress = this.liveObject.progress;
-    }
-
-    shouldRemove(): boolean {
-        // TODO: possibly move this implementation to a base class?
-        // This seems valid for all static remotes (e.g. structures), but not for moveable ones (e.g. creeps).
-        return this.room !== undefined && this.liveObject === undefined;
-    }
-
-    toString(): string {
-        if (this.liveObject) return this.liveObject.toString();
-        else return `[invisible ${this.structureType} construction site at ${this.pos}]`;
-    }
+    get liveObject(): ConstructionSite { return this._local.liveObject; }
+    get progress(): number { return this._local.progress; }
+    get progressTotal(): number { return this._local.progressTotal; }
+    get plannedProgress(): number { return this._local.plannedProgress; }
+    set plannedProgress(plannedProgress: number) { this._local.plannedProgress = plannedProgress; }
+    get structureType(): StructureConstant { return this._local.structureType; }
+    shouldRemove(): boolean { return this._local === undefined; }
+    update(): void { super.update(); }
+    toString(): string { return `[remote ${this._local.toString().slice(1)}`; }
 }

@@ -1,6 +1,7 @@
 import { Job } from "./job";
+import { RemotableSource } from "../remotables/remotable";
 import { RemoteSource } from "../remotes/remote-source";
-import { FlagType } from "../flags/flag";
+import { LocalSource } from "../locals/local-source";
 
 enum Phase {
     MOVE,
@@ -8,10 +9,10 @@ enum Phase {
 }
 
 export class StationaryHarvestJob extends Job {
-    readonly source: RemoteSource;
+    readonly source: RemotableSource;
     private _phase: Phase;
 
-    constructor(creep: Creep, source: RemoteSource, phase?: Phase) {
+    constructor(creep: Creep, source: RemotableSource, phase?: Phase) {
         super("stationary-harvest", creep);
         this.source = source;
         this._phase = phase || Phase.MOVE;
@@ -36,16 +37,29 @@ export class StationaryHarvestJob extends Job {
     save(): void {
         this.creep.memory.job = {
             name: this.name,
-            flag: this.source.flag.name,
             phase: this._phase,
         };
+        if (this.source instanceof RemoteSource) this.creep.memory.job.flag = this.source.flag.name;
+        else this.creep.memory.job.source = (<LocalSource>this.source).liveObject.id;
     }
 
     static load(creep: Creep): StationaryHarvestJob {
-        let flagName: string = creep.memory.job.flag;
-        let flag: Flag|undefined = Game.flags[flagName];
-        if (flag === undefined) throw new Error(`Unable to locate flag ${flagName} for stationary harvest job for creep ${creep.name}`);
-        if (flag.type != FlagType.FLAG_SOURCE) throw new Error(`Incorrect flag type ${flag.type} for flag ${flagName} for stationary harvest job for creep ${creep.name}`);
-        return new StationaryHarvestJob(creep, <RemoteSource>flag.remote, creep.memory.job.phase);
+        let remotable;
+        if (creep.memory.job.flag !== undefined) {
+            let flagName = creep.memory.job.flag;
+            let flag = Game.flags[flagName];
+            if (flag === undefined) throw new Error(`Unable to locate flag ${flagName} for stationary harvest job for creep ${creep.name}`);
+            var remote = <RemoteSource>flag.remote;
+            remotable = remote;
+        } else if (creep.memory.job.source !== undefined) {
+            let source = <Source | null>Game.getObjectById(creep.memory.job.source);
+            if (!source) throw new Error(`Unable to locate source ${creep.memory.job.source} for stationary harvest job for creep ${creep.name}`);
+            var local = source.remotable;
+            remotable = local;
+        } else {
+            throw new Error(`Unable to load stationary harvest job for creep ${creep.name} - source information not found`);
+        }
+
+        return new StationaryHarvestJob(creep, remotable, creep.memory.job.phase);
     }
 }
