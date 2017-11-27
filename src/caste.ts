@@ -5,7 +5,7 @@ export enum Caste {
     SCOUT = "SCOUT"
 }
 
-export let PartOrders: { [key:string]:BodyPartConstant[] } = {
+export let PartOrders: { [C in Caste]:BodyPartConstant[] } = {
     WORKER: [ MOVE, CARRY, WORK, MOVE, CARRY, WORK, MOVE, CARRY, WORK, MOVE, CARRY, WORK, MOVE, CARRY, WORK, MOVE, CARRY, WORK, MOVE, CARRY, WORK, MOVE, CARRY, WORK, MOVE,
               CARRY, WORK, MOVE, CARRY, WORK, MOVE, CARRY, WORK, MOVE, CARRY, WORK, MOVE, CARRY, WORK, MOVE, CARRY, WORK, MOVE, CARRY, WORK, MOVE, CARRY, WORK, MOVE, WORK ],
     STATIONARY_HARVESTER: [ MOVE, WORK, WORK, WORK, WORK, WORK ],

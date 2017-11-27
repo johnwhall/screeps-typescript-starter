@@ -32,6 +32,8 @@ export class StationaryHarvestJob extends Job {
         }
     }
 
+    update(): void { this.source.covered = true; }
+
     save(): any {
         return {
             name: this.name,

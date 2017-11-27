@@ -2,6 +2,7 @@ import { SpawnQueueItem } from "./spawn-queue-item";
 import { Caste, selectParts } from "./caste";
 import { RemotableSource } from "./remotables/remotable";
 import { FlagType } from "./flags/flag";
+import { nextUid } from "./utils";
 
 declare global {
     interface Room {
@@ -98,18 +99,18 @@ export function init() {
     }
 
     if (!Room.prototype.queueFromTargets) {
-        Room.prototype.queueFromTargets = function () { // TODO: return early when spawnQueue is empty - avoid loading ownedCreeps and queuedCreeps
+        Room.prototype.queueFromTargets = function () {
             if (this.memory.spawnQueue === undefined) this.memory.spawnQueue = [];
             let ownedCreeps = _.groupBy(_.filter(Game.creeps, (c) => c.homeRoom == this), (c) => c.caste);
             let queuedCreeps = _.groupBy(_.filter(<SpawnQueueItem[]>this.spawnQueue, (sqi) => sqi.homeRoomName == this.name), (sqi) => sqi.caste);
             _.forEach(Caste, (caste) => {
                 let target = this.casteTarget(caste);
                 let ownedOrQueuedCount = (ownedCreeps[caste] || []).length + (queuedCreeps[caste] || []).length;
-                if (ownedOrQueuedCount < target) {
+                while (ownedOrQueuedCount < target) {
                     let sqi = new SpawnQueueItem(caste, this.name, selectParts(caste, this.energyCapacityAvailable));
                     this.spawnQueue.push(sqi);
                     if (queuedCreeps[caste] === undefined) queuedCreeps[caste] = [];
-                    queuedCreeps[caste].push(sqi);
+                    ownedOrQueuedCount++;
                     console.log(`Queued new ${caste} for ${sqi.homeRoomName}: ${sqi.parts} (cost: ${sqi.cost})`);
                 }
             });
@@ -122,7 +123,8 @@ export function init() {
             _.forEach(this.find(FIND_MY_SPAWNS), (spawn: Spawn) => {
                 let item: SpawnQueueItem = this.spawnQueue[0];
                 if (!item) return;
-                let name = `${item.caste.toLowerCase().replace("_", " ")} ${Game.time}`; // TODO: not unique if multiple spawns or multiple rooms attempt to spawn a creep of the same caste
+                // let name = `${item.caste.toLowerCase().replace("_", " ")} ${Game.time}`; // TODO: not unique if multiple spawns or multiple rooms attempt to spawn a creep of the same caste
+                let name = `${item.caste.toLowerCase().replace("_", " ")} ${nextUid()}`;
                 if (spawn.spawnCreep(item.parts, name, { memory: item.memory }) == OK) {
                     console.log(`Room ${this.name} spawning new ${item.caste}: ${name} - ${item.parts} (cost: ${item.cost})`);
                     this.memory.spawnQueue.splice(0, 1);

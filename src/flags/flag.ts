@@ -22,16 +22,6 @@ declare global {
     }
 }
 
-export function nextFlagUid(): string {
-    let prevTime = Number(Memory.previousFlagUidTime) || Game.time;
-    let num = (Number(Memory.previousFlagUidNum) || 0) + 1;
-    if (prevTime != Game.time) num = 1;
-    let uid = Game.time + "-" + num;
-    Memory.previousFlagUidTime = Game.time;
-    Memory.previousFlagUidNum = num;
-    return uid;
-}
-
 export function init() {
     // <name>           ::= "structure" <structure-type> <assigned-room-name> <uid>
     //                    | "construction" <structure-type> <assigned-room-name> <uid>

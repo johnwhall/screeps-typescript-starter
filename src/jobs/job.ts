@@ -3,6 +3,7 @@ export abstract class Job {
   readonly creep: Creep;
   abstract run(): boolean; // true if job should continue on next tick
   abstract save(): any;
+  abstract update(): void;
 
   constructor(name: string, creep: Creep) {
     this.name = name;
