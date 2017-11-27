@@ -5,12 +5,11 @@ import { FlagType } from "./flags/flag";
 
 declare global {
     interface Room {
-        readonly assignedCreeps: Creep[];
+        readonly assignedCreeps: {[C in Caste]: Creep[]};
         readonly spawningCreeps: Creep[];
         readonly assignedFlags: Flag[];
         readonly assignedSources: RemotableSource[];
         spawnQueue: SpawnQueueItem[];
-        assignedCreepsForCaste(caste: Caste): Creep[];
         assignedFlagRemoved(flag: Flag): void;
         casteTarget(caste: Caste, newTarget?: number): number;
         queueFromTargets(): void;
@@ -22,7 +21,11 @@ export function init() {
     if (!Room.prototype.assignedCreeps) {
         Object.defineProperty(Room.prototype, "assignedCreeps", {
             get: function () {
-                if (this._assignedCreeps === undefined) this._assignedCreeps = _.filter(Game.creeps, (c) => !c.spawning && c.homeRoom == this);
+                if (this._assignedCreeps === undefined) {
+                    let creeps = <{[C in Caste]: Creep[]}>_.reduce(_.keys(Caste), (acc, c) => { (<any>acc)[c] = []; return acc; }, {});
+                    _.forEach(Game.creeps, (c) => { if (!c.spawning && c.homeRoom == this) creeps[c.caste].push(c) });
+                    this._assignedCreeps = creeps;
+                }
                 return this._assignedCreeps;
             }
         });
@@ -35,13 +38,6 @@ export function init() {
                 return this._spawningCreeps;
             }
         });
-    }
-
-    if (!Room.prototype.assignedCreepsForCaste) {
-        Room.prototype.assignedCreepsForCaste = function (caste: Caste): Creep[] {
-            if (this._assignedCreepsForCaste === undefined) this._assignedCreepsForCaste = _.groupBy(this.assignedCreeps, "caste");
-            return this._assignedCreepsForCaste[caste] || [];
-        }
     }
 
     if (!Room.prototype.assignedFlags) {
@@ -102,7 +98,7 @@ export function init() {
     }
 
     if (!Room.prototype.queueFromTargets) {
-        Room.prototype.queueFromTargets = function () {
+        Room.prototype.queueFromTargets = function () { // TODO: return early when spawnQueue is empty - avoid loading ownedCreeps and queuedCreeps
             if (this.memory.spawnQueue === undefined) this.memory.spawnQueue = [];
             let ownedCreeps = _.groupBy(_.filter(Game.creeps, (c) => c.homeRoom == this), (c) => c.caste);
             let queuedCreeps = _.groupBy(_.filter(<SpawnQueueItem[]>this.spawnQueue, (sqi) => sqi.homeRoomName == this.name), (sqi) => sqi.caste);

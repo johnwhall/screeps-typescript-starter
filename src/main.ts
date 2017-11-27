@@ -64,14 +64,14 @@ function mloop() {
             // _.forEach(room.find(FIND_MY_CONSTRUCTION_SITES), (cs: ConstructionSite) => { if (!cs.flag) createConstructionSiteFlag(cs.pos, room.name) });
 
             // TODO: loop through all creeps, calling an update()-like method on them. They can handle setting covered, plannedEnergy, plannedHits, etc. themselves
-            _.forEach(room.assignedCreepsForCaste(Caste.STATIONARY_HARVESTER), (c) => { if (c.job && c.job.name == "stationary-harvest") (<StationaryHarvestJob>c.job).source.covered = true; });
+            _.forEach(room.assignedCreeps[Caste.STATIONARY_HARVESTER], (c) => { if (c.job && c.job.name == "stationary-harvest") (<StationaryHarvestJob>c.job).source.covered = true; });
 
             let roomCoveredSources = _.filter(room.assignedSources, (s) => s.covered);
             let roomUncoveredSources = _.filter(room.assignedSources, (s) => !s.covered);
 
             console.log(room.assignedSources.map((rs: RemotableSource) => rs + " (" + rs.covered + ")"));
 
-            _.forEach(room.assignedCreepsForCaste(Caste.STATIONARY_HARVESTER).filter((c) => !c.job), (c) => {
+            _.forEach(room.assignedCreeps[Caste.STATIONARY_HARVESTER].filter((c) => !c.job), (c) => {
                 if (roomUncoveredSources.length == 0) return false;
                 let job = new StationaryHarvestJob(c, roomUncoveredSources[0]);
                 console.log(`Ordering ${c.name} to harvest from ${job.source}`);
