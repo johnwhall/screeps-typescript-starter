@@ -3,49 +3,18 @@ import * as Config from "./config/config";
 import * as Profiler from "screeps-profiler";
 import { log, exceptionColor, color } from "./lib/logger/log";
 
-import * as FlagModule from "./flags/flag";
-// import { FlagType } from "./flags/flag";
-import * as StructureFlagModule from "./flags/structure-flag";
-
-// import { RemoteSource } from "./remotes/remote-source";
-import * as CreepModule from "./creep";
-import * as ConstructionSiteModule from "./construction-site";
-import * as RoomModule from "./room";
 import { Caste } from "./caste";
 import { StationaryHarvestJob } from "./jobs/stationary-harvest-job";
-// import { create5a1afe3d955dae5041e7e169ConstructionSiteFlag } from "./flags/construction-site-flag";
-import * as LocalSourceModule from "./locals/local-source";
-import * as LocalContainerModule from "./locals/local-container";
-import * as LocalConstructionSiteModule from "./locals/local-construction-site";
 import { RemotableSource } from "./remotables/remotable";
 
-// Any code written outside the `loop()` method is executed only when the
-// Screeps system reloads your script.
-// Use this bootstrap wisely. You can cache some of your stuff to save CPU.
-// You should extend prototypes before the game loop executes here.
+import { init } from "./init";
 
-// This is an example for using a config variable from `config.ts`.
-// NOTE: this is used as an example, you may have better performance
-// by setting USE_PROFILER through webpack, if you want to permanently
-// remove it on deploy
-// Start the profiler
-if (Config.USE_PROFILER) {
-    Profiler.enable();
-}
+if (Config.USE_PROFILER) Profiler.enable();
 
 log.debug(`Scripts bootstrapped`);
-if (__REVISION__) {
-    log.debug(`Revision ID: ${__REVISION__}`);
-}
+if (__REVISION__) log.debug(`Revision ID: ${__REVISION__}`);
 
-FlagModule.init();
-StructureFlagModule.init();
-CreepModule.init();
-ConstructionSiteModule.init();
-RoomModule.init();
-LocalSourceModule.init();
-LocalContainerModule.init();
-LocalConstructionSiteModule.init();
+init();
 
 function mloop() {
     try {
