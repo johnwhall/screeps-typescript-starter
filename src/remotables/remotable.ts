@@ -1,8 +1,11 @@
+import { Remote } from "../remotes/remote";
+import { Local } from "../locals/local";
+
 export interface Remotable<T extends RoomObject> {
     readonly liveObject: T | undefined;
     readonly pos: RoomPosition;
     readonly room: Room | undefined;
-    // save(): any;
+    save(): any;
 }
 
 export interface RemotableEnergySource {
@@ -35,7 +38,15 @@ export interface RemotableContainer extends RemotableStructure<StructureContaine
 }
 
 declare global {
+    interface RoomObject { remotable: Remotable<RoomObject>; }
     interface Source { remotable: RemotableSource; }
     interface ConstructionSite { remotable: RemotableConstructionSite; }
     interface StructureContainer { remotable: RemotableContainer; }
+}
+
+export function load(obj: any): Remotable<RoomObject> {
+    if (typeof obj != "string") throw new Error(`Cannot load remotable from ${obj}`);
+    if (obj.slice(0, 5) == "flag:") return Remote.load(obj);
+    else if (obj.slice(0, 3) == "id:") return Local.load(obj);
+    else throw new Error(`Cannot load remotable from ${obj}`);
 }

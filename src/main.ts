@@ -63,6 +63,7 @@ function mloop() {
             // Do I need this? Local construction sites can be handled by LocalConstructionSite - why do I need a flag (and therefore a RemoteConstructionSite) for construction sites in my own room?
             // _.forEach(room.find(FIND_MY_CONSTRUCTION_SITES), (cs: ConstructionSite) => { if (!cs.flag) createConstructionSiteFlag(cs.pos, room.name) });
 
+            // TODO: loop through all creeps, calling an update()-like method on them. They can handle setting covered, plannedEnergy, plannedHits, etc. themselves
             _.forEach(room.assignedCreepsForCaste(Caste.STATIONARY_HARVESTER), (c) => { if (c.job && c.job.name == "stationary-harvest") (<StationaryHarvestJob>c.job).source.covered = true; });
 
             let roomCoveredSources = _.filter(room.assignedSources, (s) => s.covered);

@@ -22,4 +22,15 @@ export abstract class Remote<T extends RoomObject> implements Remotable<T> {
     associate(): void {
         if (this.liveObject !== undefined) (<any>this.liveObject).remotable = this;
     }
+
+    save(): any { return `flag:${this.flag.name}`; }
+
+    static load(obj: any): Remote<RoomObject> {
+        if (typeof obj != "string") throw new Error(`Cannot load remote from ${obj}`);
+        if (obj.slice(0, 5) != "flag:") throw new Error(`Cannot load remote from ${obj}`);
+        let flag: Flag | null = Game.flags[obj.slice(5)];
+        if (flag == null) throw new Error(`Could not find flag ${obj.slice(5)}`);
+        let remote = flag.remote;
+        return remote;
+    }
 }

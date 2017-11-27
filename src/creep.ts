@@ -25,7 +25,7 @@ export function init() {
         Creep.prototype.doJob = function() {
             if (this.spawning || this.job === undefined) return;
             if (this.job.run()) {
-                this.job.save();
+                this.memory.job = this.job.save();
             } else {
                 // job finished
                 delete this.job;
@@ -47,7 +47,7 @@ export function init() {
                 } else {
                     if (job.creep != this) throw `Job creep ${job.creep} does not match this creep ${this.name}`;
                     this._job = job;
-                    job.save();
+                    this.memory.job = job.save();
                 }
             }
         });
