@@ -1,6 +1,6 @@
 import { SpawnQueueItem } from "./spawn-queue-item";
 import { Caste, selectParts } from "./caste";
-import { RemotableSource } from "./remotables/remotable";
+import { RemotableSource, RemotableContainer } from "./remotables/remotable";
 import { FlagType } from "./flags/flag";
 import { nextUid } from "./utils";
 
@@ -10,6 +10,7 @@ declare global {
         readonly spawningCreeps: Creep[];
         readonly assignedFlags: Flag[];
         readonly assignedSources: RemotableSource[];
+        readonly assignedContainers: RemotableContainer[];
         spawnQueue: SpawnQueueItem[];
         assignedFlagRemoved(flag: Flag): void;
         casteTarget(caste: Caste, newTarget?: number): number;
@@ -67,11 +68,26 @@ export function init() {
         Object.defineProperty(Room.prototype, "assignedSources", {
             get: function () {
                 if (this._assignedSources === undefined) {
+                    // TODO: call reduce instead - this eliminates the need for the temporary list (the result of this.find(...))
                     let roomSources = _.pluck(this.find(FIND_SOURCES), "remotable");
                     let flagSources = _.pluck(this.assignedFlags.filter((f: Flag) => f.type == FlagType.FLAG_SOURCE), "remote");
                     this._assignedSources = _.unique(roomSources.concat(flagSources));
                 }
                 return this._assignedSources;
+            },
+        });
+    }
+
+    if (!Room.prototype.assignedContainers) {
+        Object.defineProperty(Room.prototype, "assignedContainers", {
+            get: function () {
+                if (this._assignedContainers === undefined) {
+                    // TODO: call reduce instead - this eliminates the need for the temporary list (the result of this.find(...))
+                    let roomContainers = _.pluck(this.find(FIND_STRUCTURES, { filter: (s: Structure) => s.structureType === STRUCTURE_CONTAINER }), "remotable");
+                    let flagContainers = _.pluck(this.assignedFlags.filter((f: Flag) => f.type === FlagType.FLAG_STRUCTURE && f.structureType === STRUCTURE_CONTAINER), "remote");
+                    this._assignedContainers = _.unique(roomContainers.concat(flagContainers));
+                }
+                return this._assignedContainers;
             },
         });
     }

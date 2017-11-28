@@ -1,7 +1,7 @@
 import { RemoteStructure } from "./remote-structure";
 import { RemotableContainer } from "../remotables/remotable";
 
-export class RemoteContainer extends RemoteStructure<StructureContainer> implements RemotableContainer {
+export class RemoteContainer extends RemoteStructure<StructureContainer, STRUCTURE_CONTAINER> implements RemotableContainer {
     readonly structureType: STRUCTURE_CONTAINER = STRUCTURE_CONTAINER;
     plannedEnergy: number;
     private _liveObject: StructureContainer;
@@ -24,7 +24,7 @@ export class RemoteContainer extends RemoteStructure<StructureContainer> impleme
     }
 
     get energy(): number { return this.store[RESOURCE_ENERGY]; }
-    get energyCapacity(): number { return this.storeCapacity - _.sum(this.store) + this.store[RESOURCE_ENERGY]; }
+    get energyCapacity(): number { return this.storeCapacity - _.sum(this.store) + this.store[RESOURCE_ENERGY]; } // TODO: consider caching this
 
     update(): void {
         super.update();

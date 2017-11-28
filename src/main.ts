@@ -5,7 +5,7 @@ import { log, exceptionColor, color } from "./lib/logger/log";
 
 import { Caste } from "./caste";
 import { StationaryHarvestJob } from "./jobs/stationary-harvest-job";
-import { RemotableSource } from "./remotables/remotable";
+import { UpgradeJob } from "./jobs/upgrade-job";
 
 import { init } from "./init";
 
@@ -28,26 +28,34 @@ function mloop() {
             if (!room.controller || !room.controller.my) return;
 
             room.casteTarget(Caste.STATIONARY_HARVESTER, 2);
+            room.casteTarget(Caste.WORKER, 2);
 
             // Do I need this? Local construction sites can be handled by LocalConstructionSite - why do I need a flag (and therefore a RemoteConstructionSite) for construction sites in my own room?
             // _.forEach(room.find(FIND_MY_CONSTRUCTION_SITES), (cs: ConstructionSite) => { if (!cs.flag) createConstructionSiteFlag(cs.pos, room.name) });
 
-            // TODO: loop through all creeps, calling an update()-like method on them. They can handle setting covered, plannedEnergy, plannedHits, etc. themselves
-            // _.forEach(room.assignedCreeps[Caste.STATIONARY_HARVESTER], (c) => { if (c.job && c.job.name == "stationary-harvest") (<StationaryHarvestJob>c.job).source.covered = true; });
             _.forEach(room.assignedCreeps, (cs) => _.forEach(cs, (c) => { if (c.job) c.job.update(); }));
 
-            let roomCoveredSources = _.filter(room.assignedSources, (s) => s.covered);
             let roomUncoveredSources = _.filter(room.assignedSources, (s) => !s.covered);
 
-            console.log(room.assignedSources.map((rs: RemotableSource) => rs + " (" + rs.covered + ")"));
-
+            // STATIONARY HARVESTERS
             _.forEach(room.assignedCreeps[Caste.STATIONARY_HARVESTER].filter((c) => !c.job), (c) => {
                 if (roomUncoveredSources.length == 0) return false;
                 let job = new StationaryHarvestJob(c, roomUncoveredSources[0]);
                 console.log(`Ordering ${c.name} to harvest from ${job.source}`);
                 c.job = job;
-                roomCoveredSources.push(roomUncoveredSources.splice(0, 1)[0]);
+                roomUncoveredSources.splice(0, 1);
             });
+
+            let unemployedWorkers = _.filter(room.assignedCreeps[Caste.WORKER], (c: Creep) => !c.job);
+
+            // UPGRADERS
+            while (unemployedWorkers.length > 0) {
+                let worker = unemployedWorkers[0];
+                let energyStore = worker.pos.findClosestByPath(roomUncoveredSources);
+                console.log(`Ordering ${worker.name} to pick up ${worker.freeCapacity} from ${energyStore} and upgrade ${room.controller.remotable}`);
+                worker.job = new UpgradeJob(worker, energyStore, room.controller.remotable);
+                unemployedWorkers.splice(0, 1);
+            }
 
             room.queueFromTargets();
             room.spawnFromQueue();

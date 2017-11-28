@@ -1,7 +1,7 @@
 import { Local } from "./local";
 import { RemotableStructure } from "../remotables/remotable";
 
-export class LocalStructure<S extends Structure, T extends StructureConstant = StructureConstant> extends Local<S> implements RemotableStructure<S, T> {
+export class LocalStructure<S extends Structure, T extends StructureConstant> extends Local<S> implements RemotableStructure<S, T> {
     plannedHits: number;
 
     constructor(liveObject: S) {

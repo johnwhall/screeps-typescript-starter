@@ -14,19 +14,19 @@ export class StationaryHarvestJob extends Job {
         super("stationary-harvest", creep);
         this.source = source;
         this._phase = phase || Phase.MOVE;
+        this.update();
     }
 
     run(): boolean {
         switch (this._phase) {
             case Phase.MOVE:
-                if (!this.creep.pos.isNearTo(this.source)) {
-                    this.creep.moveTo(this.source);
-                    return true;
-                }
+                if (this.moveTo(this.source)) return true;
                 this._phase = Phase.HARVEST;
+
             case Phase.HARVEST:
                 this.creep.harvest(<Source>this.source.liveObject);
                 return true;
+
             default:
                 throw new Error(`Unknown phase ${this._phase} for creep ${this.creep.name}`);
         }

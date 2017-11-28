@@ -5,6 +5,7 @@ import { loadJob } from "./jobs/job-loader";
 declare global {
     interface Creep {
         readonly caste: Caste;
+        readonly freeCapacity: number;
         homeRoom: Room | undefined;
         job: Job | undefined;
         doJob(): void;
@@ -17,6 +18,15 @@ export function init() {
             get: function() {
                 if (this._caste === undefined) this._caste = Caste[this.memory.caste];
                 return this._caste;
+            },
+        });
+    }
+
+    if (!Creep.prototype.freeCapacity) {
+        Object.defineProperty(Creep.prototype, "freeCapacity", {
+            get: function() {
+                if (this._freeCapacity === undefined) this._freeCapacity = this.carryCapacity - _.sum(this.carry);
+                return this._freeCapacity;
             },
         });
     }

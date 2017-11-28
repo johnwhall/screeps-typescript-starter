@@ -1,8 +1,7 @@
 import { LocalStructure } from "./local-structure";
 import { RemotableContainer } from "../remotables/remotable";
 
-export class LocalContainer extends LocalStructure<StructureContainer> implements RemotableContainer {
-    readonly structureType: STRUCTURE_CONTAINER = STRUCTURE_CONTAINER;
+export class LocalContainer extends LocalStructure<StructureContainer, STRUCTURE_CONTAINER> implements RemotableContainer {
     plannedEnergy: number;
 
     constructor(liveObject: StructureContainer) {
@@ -13,7 +12,7 @@ export class LocalContainer extends LocalStructure<StructureContainer> implement
     get store(): StoreDefinition { return this.liveObject.store; }
     get storeCapacity(): number { return this.liveObject.storeCapacity; }
     get energy(): number { return this.liveObject.store[RESOURCE_ENERGY]; }
-    get energyCapacity(): number { return this.liveObject.storeCapacity - _.sum(this.liveObject.store) + this.liveObject.store[RESOURCE_ENERGY]; }
+    get energyCapacity(): number { return this.liveObject.storeCapacity - _.sum(this.liveObject.store) + this.liveObject.store[RESOURCE_ENERGY]; } // TODO: consider caching this
 }
 
 export function init() {

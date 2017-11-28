@@ -5,6 +5,7 @@ import * as ConstructionSiteModule from "./construction-site";
 import * as RoomModule from "./room";
 import * as LocalSourceModule from "./locals/local-source";
 import * as LocalContainerModule from "./locals/local-container";
+import * as LocalControllerModule from "./locals/local-controller";
 import * as LocalConstructionSiteModule from "./locals/local-construction-site";
 
 export function init() {
@@ -15,5 +16,6 @@ export function init() {
     RoomModule.init();
     LocalSourceModule.init();
     LocalContainerModule.init();
+    LocalControllerModule.init();
     LocalConstructionSiteModule.init();
 }
