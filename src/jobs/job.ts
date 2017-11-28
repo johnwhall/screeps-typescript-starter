@@ -1,4 +1,5 @@
 import { RemotableEnergyStore } from "../remotables/remotable";
+import { swapIndices } from "../utils";
 
 export abstract class Job {
     readonly name: string;
@@ -24,6 +25,19 @@ export abstract class Job {
         if (droppedEnergy !== undefined) this.creep.pickup(droppedEnergy);
         else if (energyStore.liveObject instanceof Source) this.creep.harvest(energyStore.liveObject);
         else this.creep.withdraw(<Structure>energyStore.liveObject, RESOURCE_ENERGY);
+        return true;
+    }
+
+    // protected selectNextTarget<T extends RoomObject>(targets: T[]) {
+    //     if (targets.length == 0) return;
+    //     let nextTarget = this.creep.pos.findClosestByPath(targets);
+    //     targets.swapProperties(targets.indexOf(nextTarget), 0);
+    // }
+
+    protected selectNextTarget(targets: (RoomPosition | { pos: RoomPosition })[]): boolean {
+        if (targets.length == 0) return false;
+        let nextTarget = this.creep.pos.findClosestByPath(targets);
+        swapIndices(targets, targets.indexOf(nextTarget), 0);
         return true;
     }
 };

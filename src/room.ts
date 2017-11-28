@@ -1,6 +1,6 @@
 import { SpawnQueueItem } from "./spawn-queue-item";
 import { Caste, selectParts } from "./caste";
-import { RemotableSource, RemotableContainer } from "./remotables/remotable";
+import { RemotableSource, RemotableContainer, RemotableConstructionSite } from "./remotables/remotable";
 import { FlagType } from "./flags/flag";
 import { nextUid } from "./utils";
 
@@ -11,6 +11,7 @@ declare global {
         readonly assignedFlags: Flag[];
         readonly assignedSources: RemotableSource[];
         readonly assignedContainers: RemotableContainer[];
+        readonly assignedConstructionSites: RemotableConstructionSite[];
         spawnQueue: SpawnQueueItem[];
         assignedFlagRemoved(flag: Flag): void;
         casteTarget(caste: Caste, newTarget?: number): number;
@@ -88,6 +89,20 @@ export function init() {
                     this._assignedContainers = _.unique(roomContainers.concat(flagContainers));
                 }
                 return this._assignedContainers;
+            },
+        });
+    }
+
+    if (!Room.prototype.assignedConstructionSites) {
+        Object.defineProperty(Room.prototype, "assignedConstructionSites", {
+            get: function () {
+                if (this._assignedConstructionSites === undefined) {
+                    // TODO: call reduce instead - this eliminates the need for the temporary list (the result of this.find(...))
+                    let roomConstructionSites = _.pluck(this.find(FIND_MY_CONSTRUCTION_SITES), "remotable");
+                    let flagConstructionSites = _.pluck(this.assignedFlags.filter((f: Flag) => f.type === FlagType.FLAG_CONSTRUCTION_SITE), "remote");
+                    this._assignedConstructionSites = _.unique(roomConstructionSites.concat(flagConstructionSites));
+                }
+                return this._assignedConstructionSites;
             },
         });
     }

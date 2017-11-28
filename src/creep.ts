@@ -31,7 +31,7 @@ export function init() {
         });
     }
 
-    if (!Creep.prototype.doJob) {
+    if (!Creep.prototype.doJob) { // TODO: optionally cancel job & log info on exception
         Creep.prototype.doJob = function() {
             if (this.spawning || this.job === undefined) return;
             if (this.job.run()) {
@@ -47,7 +47,7 @@ export function init() {
     if (!Creep.prototype.job) {
         Object.defineProperty(Creep.prototype, "job", {
             get: function() {
-                if (this._job === undefined && this.memory.job) this._job = loadJob(this);
+                if (this._job === undefined && this.memory.job) this._job = loadJob(this); // TODO: optionally cancel job & log info on exception
                 return this._job;
             },
             set: function(job: Job | undefined) {

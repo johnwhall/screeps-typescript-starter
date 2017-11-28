@@ -14,7 +14,7 @@ export class StationaryHarvestJob extends Job {
         super("stationary-harvest", creep);
         this.source = source;
         this._phase = phase || Phase.MOVE;
-        this.update();
+        if (phase === undefined) this.update(); // only update when job is being assigned, not when loaded from memory (if updated when loaded from memory, update will happen twice)
     }
 
     run(): boolean {

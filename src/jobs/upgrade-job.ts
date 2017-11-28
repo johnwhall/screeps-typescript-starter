@@ -18,7 +18,7 @@ export class UpgradeJob extends Job {
         this.energyStore = energyStore;
         this.controller = controller;
         this._phase = phase || Phase.MOVE_TO_ENERGY;
-        this.update();
+        if (phase === undefined) this.update(); // only update when job is being assigned, not when loaded from memory (if updated when loaded from memory, update will happen twice)
     }
 
     run(): boolean {
@@ -26,7 +26,7 @@ export class UpgradeJob extends Job {
             case Phase.MOVE_TO_ENERGY:
                 // Check if the source was assigned a stationary harvester since our job was assigned; cancel if so
                 if (isRemotableSource(this.energyStore) && this.energyStore.covered) return false;
-                if (this.moveTo(this.energyStore)) return true;
+                if (this.creep.freeCapacity > 0 && this.moveTo(this.energyStore)) return true;
                 this._phase = Phase.LOAD;
 
             case Phase.LOAD:
