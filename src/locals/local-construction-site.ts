@@ -2,16 +2,18 @@ import { Local } from "./local";
 import { RemotableConstructionSite } from "../remotables/remotable";
 
 export class LocalConstructionSite extends Local<ConstructionSite> implements RemotableConstructionSite {
-    plannedProgress: number;
+    private _plannedProgress: number;
 
     constructor(liveObject: ConstructionSite) {
         super(liveObject);
-        this.plannedProgress = this.liveObject.progress;
+        this._plannedProgress = this.liveObject.progress;
     }
 
     get progress(): number { return this.liveObject.progress; }
     get progressTotal(): number { return this.liveObject.progressTotal; }
     get structureType(): StructureConstant { return this.liveObject.structureType; }
+    get plannedProgress(): number { return this._plannedProgress; }
+    set plannedProgress(plannedProgress: number) { this._plannedProgress = Math.min(plannedProgress, this.progressTotal) };
 }
 
 export function init() {

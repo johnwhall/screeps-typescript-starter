@@ -5,124 +5,166 @@ enum Phase {
     MOVE_TO_ENERGY,
     LOAD,
     MOVE_TO_CONSTRUCTION_SITE,
-    BUILD,
-    REPAIR
+    BUILD
 }
 
-// TODO: needed?
-interface IBuildJobTarget {
-    readonly site: RemotableConstructionSite | undefined;
-    myRemainingProgress: number;
-    readonly pos: RoomPosition;
+export class BuildTarget {
+    constructor(public readonly site: RemotableConstructionSite, public myRemainingProgress: number) { }
+    get pos(): RoomPosition { return this.site.pos; }
+    get actual(): BuildTarget { return this; }
+    get alreadyFinished(): boolean { return false; }
+    save(): any { return { site: this.site.save(), myRemainingProgress: this.myRemainingProgress } }
+    toString(): string { return `${this.site.toString()} (${this.myRemainingProgress})` }
 }
 
-interface IBuildJobTargetMemory {
-    readonly site?: any;
-    readonly committedProgress: number;
-    readonly pos?: RoomPosition;
-}
+class PossibleBuildTarget {
+    private _target?: BuildTarget;
+    constructor(public readonly site: RemotableConstructionSite | undefined, public myRemainingProgress: number) { }
+    get pos(): RoomPosition | undefined { return this.site === undefined ? undefined : this.site.pos; }
+    get alreadyFinished(): boolean { return this.pos === undefined; }
 
-class BuildJobTargetMemory implements IBuildJobTargetMemory {
-    readonly site?: any;
-    committedProgress: number;
-    readonly pos?: RoomPosition;
-
-    constructor(target: IBuildJobTarget) {
-        if (target.site === undefined) this.pos = target.pos;
-        else this.site = target.site.save(); // TODO: should still save pos in case we finish construction, so we can retrieve it next tick (when we wouldn't be able to derive it from the non-existent ConstructionSite game object)
-        this.committedProgress = target.myRemainingProgress;
+    get actual(): BuildTarget {
+        if (this._target === undefined) {
+            if (this.site === undefined) throw new Error('Attempting to dereference missing PossibleTarget');
+            this._target = new BuildTarget(this.site, this.myRemainingProgress);
+        }
+        return this._target;
     }
 }
 
-export class BuildJobTarget implements IBuildJobTarget {
-    readonly site: RemotableConstructionSite | undefined;
-    readonly pos: RoomPosition;
+interface IBuildTargetMemory {
+    readonly savedSite: any;
+    readonly myRemainingProgress: number;
+}
 
-    constructor(site: RemotableConstructionSite | RoomPosition, public readonly myRemainingProgress: number) {
-        if (site instanceof RoomPosition) this.pos = site;
-        else [ this.site, this.pos ] = [ site, site.pos ];
-    }
+class BuildTargetMemory implements IBuildTargetMemory {
+    constructor(public readonly savedSite: any, public readonly myRemainingProgress: number) { }
 }
 
 // TODO: all energy costs should be updated to take boosts into account
 export class BuildJob extends Job {
-    readonly energyStore: RemotableEnergyStore;
-    readonly targets: IBuildJobTarget[];
-    private _phase: Phase;
+    private _energyStore: RemotableEnergyStore;
+    private _targets: PossibleBuildTarget[]; // TODO: but I need to load them every time for update()
 
-    constructor(creep: Creep, energyStore: RemotableEnergyStore, targets: IBuildJobTarget[], phase?: Phase) {
-        super("build", creep);
-        this.energyStore = energyStore;
-        this.targets = targets;
-        this._phase = phase || Phase.MOVE_TO_ENERGY;
-        if (phase === undefined) this.update(); // only update when job is being assigned, not when loaded from memory (if updated when loaded from memory, update will happen twice)
-    }
-
-    run(): boolean {
-        switch (this._phase) {
-            case Phase.MOVE_TO_ENERGY:
-                // Check if the source was assigned a stationary harvester since our job was assigned; cancel if so
-                if (isRemotableSource(this.energyStore) && this.energyStore.covered) return false;
-                if (this.moveTo(this.energyStore)) return true; // TODO: don't move to energy store if we already have enough energy
-                this._phase = Phase.LOAD;
-
-            case Phase.LOAD:
-                if (this.loadEnergy(this.energyStore, _.sum(this.targets, (t) => t.myRemainingProgress))) return true;
-                this.selectNextTarget(this.targets);
-                this._phase = Phase.MOVE_TO_CONSTRUCTION_SITE;
-
-            case Phase.MOVE_TO_CONSTRUCTION_SITE:
-                if (this.moveTo(this.targets[0], 3)) return true;
-                this._phase = Phase.BUILD;
-
-            case Phase.BUILD:
-                let site = this.targets[0].site; // TODO: make sure target is skipped and job eventually ends if site === undefined
-                if (site && this.creep.build(<ConstructionSite>site.liveObject) === OK) {
-                    this.targets[0].myRemainingProgress -= 5; // TODO: this should be ... -= max(numWorkParts * BUILD_POWER, carry.energy, target.hitsMax - target.hits) (and adjust for boosts)
-                    return true; // TODO: should lower site.committedProgress (and possibly rename it to reflect that it goes down over time)
-                }
-                this._phase = Phase.REPAIR;
-
-            // TODO: if our original target order is [road, rampart] but selectNextTarget picks [rampart, road], we will use all our energy on the rampart and not build the road
-            case Phase.REPAIR: // TODO: if we are building something on top of an already-existing rampart, this will spend energy on repairing the rampart instead of moving on to the next build target
-                let repairTarget = (<Structure[]>this.targets[0].pos.lookFor(LOOK_STRUCTURES)).filter((s) => s.structureType == STRUCTURE_RAMPART)[0];
-                if (repairTarget === undefined) {
-                    this.targets.splice(0, 1);
-                    if(this.selectNextTarget(this.targets)) {
-                        this._phase = Phase.MOVE_TO_CONSTRUCTION_SITE;
-                        return true;
-                    } else {
-                        return false;
-                    }
-                } else {
-                    return this.creep.repair(repairTarget) === OK;
-                }
-
-            default:
-                throw new Error(`Unknown phase ${this._phase} for creep ${this.creep.name}`);
+    static newJob(creep: Creep, energyStore: RemotableEnergyStore, targets: BuildTarget[]): BuildJob {
+        try {
+        creep.memory.job = {};
+        let job = new BuildJob(creep);
+        job.energyStore = energyStore;
+        job.targets = targets;
+        job.phase = Phase.MOVE_TO_ENERGY;
+        return job;
+        } catch (e) {
+            delete creep.memory.job;
+            throw e;
         }
     }
 
+    constructor(creep: Creep) {
+        super("build", creep);
+    }
+
+    get energyStore(): RemotableEnergyStore {
+        if (this._energyStore === undefined) {
+            // TODO: "type-check" remotables
+            let energyStore = <RemotableEnergyStore | undefined>loadRemotable(this.creep.memory.job.energyStore);
+            if (energyStore === undefined) throw new Error(`Missing remotable energy store for upgrade job ${JSON.stringify(this.creep.memory.job)}`);
+            this._energyStore = energyStore;
+        }
+        return this._energyStore;
+    }
+
+    set energyStore(energyStore: RemotableEnergyStore) {
+        this._energyStore = energyStore;
+        this.creep.memory.job.energyStore = energyStore.save();
+    }
+
+    get targets(): PossibleBuildTarget[] {
+        if (this._targets === undefined) {
+            // TODO: "type-check" remotables
+            this._targets = [];
+            for (let i = 0; i < this.creep.memory.job.targets.length; i++) {
+                let target = <IBuildTargetMemory>this.creep.memory.job.targets[i];
+                let site = <RemotableConstructionSite | undefined>loadRemotable(target.savedSite);
+                this._targets.push(new PossibleBuildTarget(site, target.myRemainingProgress));
+            }
+        }
+        return this._targets;
+    }
+
+    set targets(targets: PossibleBuildTarget[]) {
+        this.creep.memory.job.targets = [];
+        for (let i = 0; i < targets.length; i++) {
+            this.creep.memory.job.targets.push(new BuildTargetMemory(targets[i].actual.site.save(), targets[i].myRemainingProgress));
+        }
+        this._targets = targets;
+    }
+
+    get phase(): Phase { return this.creep.memory.job.phase; }
+    set phase(phase: Phase) { this.creep.memory.job.phase = phase; }
+
+    run(): boolean {
+        switch (this.creep.memory.job.phase) {
+            case Phase.MOVE_TO_ENERGY:
+                // Check if the source was assigned a stationary harvester since our job was assigned; cancel if so
+                if (isRemotableSource(this.energyStore) && this.energyStore.covered) return false;
+                if (this.moveInRangeTo(this.energyStore)) return true; // TODO: don't move to energy store if we already have enough energy
+                this.creep.memory.job.phase = Phase.LOAD;
+
+            case Phase.LOAD:
+                if (this.loadEnergy(this.energyStore, _.sum(this.targets, (t) => t.myRemainingProgress))) return true;
+                this.targets = this.selectNextTarget(this.removeFinishedTargets(this.targets));
+                if (this.targets.length == 0) return false;
+                this.creep.memory.job.phase = Phase.MOVE_TO_CONSTRUCTION_SITE;
+
+            case Phase.MOVE_TO_CONSTRUCTION_SITE:
+                if (this.targets[0].pos === undefined && !this.targetFinished()) return false; // construction site was built already and a new target was not found
+                if (this.moveInRangeTo(this.targets[0].actual.pos, 3)) return true;
+                this.creep.memory.job.phase = Phase.BUILD;
+
+            case Phase.BUILD:
+                if (this.targets[0].pos === undefined) {
+                    // construction site was built already
+                    this.creep.memory.job.phase = Phase.MOVE_TO_CONSTRUCTION_SITE;
+                    return this.targetFinished();
+                }
+
+                if (this.creep.build(<ConstructionSite>this.targets[0].actual.site.liveObject) === OK) {
+                    this.creep.memory.job.targets[0].myRemainingProgress -= 5; // TODO: this should be ... -= max(numWorkParts * BUILD_POWER, carry.energy, target.hitsMax - target.hits) (and adjust for boosts)
+                    return true;
+                }
+                return false;
+
+            default:
+                throw new Error(`Unknown phase ${this.creep.memory.job.phase} for creep ${this.creep.name}`);
+        }
+    }
+
+    private targetFinished(): boolean {
+        this.targets = this.selectNextTarget(this.removeFinishedTargets(this.targets.slice(1)));
+        return this.targets.length !== 0;
+    }
+
+    get totalRemainingProgress(): number {
+        let trp = 0;
+        for (let i = 0; i < this.targets.length; i++) trp += this.targets[i].myRemainingProgress;
+        return trp;
+    }
+
     update(): void {
+        if (this.phase <= Phase.LOAD) this.energyStore.plannedEnergy -= this.totalRemainingProgress;
         _.forEach(this.targets, (t) => { if (t.site) t.site.plannedProgress += t.myRemainingProgress; });
     }
 
-    // TODO: update memory incrementally in run() instead of all at the end (which requires resaving many targets instead of only the one we modified this tick)
-    save(): any {
-        return {
-            name: this.name,
-            energyStore: this.energyStore.save(),
-            targets: _.map(this.targets, (t) => new BuildJobTargetMemory(t)),
-            phase: this._phase,
-        };
+    private removeFinishedTargets(targets: PossibleBuildTarget[]): BuildTarget[] {
+        let realTargets: BuildTarget[] = [];
+        for (let i = 0; i < targets.length; i++) {
+            if (targets[i].site !== undefined) realTargets.push(<BuildTarget>targets[i]);
+        }
+        return realTargets;
     }
 
     static load(creep: Creep): BuildJob {
-        // TODO: "type-check" remotables
-        let energyStore = <RemotableEnergyStore>loadRemotable(creep.memory.job.energyStore);
-        let targetMemories = <IBuildJobTargetMemory[]>creep.memory.job.targets;
-        // TODO: only load targets when we need to (the target we are building/repairing this tick and when we need to select a new target) - LazyLoadBuildJobTarget class?
-        let targets = _.map(targetMemories, (tm) => new BuildJobTarget(<RemotableConstructionSite>loadRemotable(tm.site) || tm.pos, tm.committedProgress));
-        return new BuildJob(creep, energyStore, targets, creep.memory.job.phase);
+        return new BuildJob(creep);
     }
 }

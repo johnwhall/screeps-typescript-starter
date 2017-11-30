@@ -97,6 +97,12 @@ export class Log {
     }});
   }
 
+  public logException(e: any): Log {
+    if (e instanceof Error) this.trace(e);
+    else console.log(color(e, exceptionColor));
+    return this;
+  }
+
   public trace(error: Error): Log {
     if (this.level >= LogLevels.ERROR && error.stack) {
       console.log(this.resolveStack(error.stack));

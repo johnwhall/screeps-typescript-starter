@@ -7,44 +7,61 @@ enum Phase {
 }
 
 export class StationaryHarvestJob extends Job {
-    readonly source: RemotableSource;
-    private _phase: Phase;
+    private _source: RemotableSource;
 
-    constructor(creep: Creep, source: RemotableSource, phase?: Phase) {
+    static newJob(creep: Creep, source: RemotableSource): StationaryHarvestJob {
+        try {
+            creep.memory.job = {};
+            let job = new StationaryHarvestJob(creep);
+            job.source = source;
+            job.phase = Phase.MOVE;
+            return job;
+        } catch (e) {
+            delete creep.memory.job;
+            throw e;
+        }
+    }
+
+    constructor(creep: Creep) {
         super("stationary-harvest", creep);
-        this.source = source;
-        this._phase = phase || Phase.MOVE;
-        if (phase === undefined) this.update(); // only update when job is being assigned, not when loaded from memory (if updated when loaded from memory, update will happen twice)
     }
 
     run(): boolean {
-        switch (this._phase) {
+        switch (this.creep.memory.job.phase) {
             case Phase.MOVE:
-                if (this.moveTo(this.source)) return true;
-                this._phase = Phase.HARVEST;
+                if (this.moveInRangeTo(this.source)) return true;
+                this.creep.memory.job.phase = Phase.HARVEST;
 
             case Phase.HARVEST:
                 this.creep.harvest(<Source>this.source.liveObject);
                 return true;
 
             default:
-                throw new Error(`Unknown phase ${this._phase} for creep ${this.creep.name}`);
+                throw new Error(`Unknown phase ${this.creep.memory.job.phase} for creep ${this.creep.name}`);
         }
     }
 
-    update(): void { this.source.covered = true; }
-
-    save(): any {
-        return {
-            name: this.name,
-            source: this.source.save(),
-            phase: this._phase,
-        };
+    get source(): RemotableSource {
+        if (this._source === undefined) {
+            // TODO: "type-check" remotables
+            let source = <RemotableSource | undefined>loadRemotable(this.creep.memory.job.source);
+            if (source === undefined) throw new Error(`Null remotable source for stationary harvest job ${JSON.stringify(this.creep.memory.job)}`);
+            this._source = source;
+        }
+        return this._source;
     }
 
+    set source(source: RemotableSource) {
+        this._source = source;
+        this.creep.memory.job.source = source.save();
+    }
+
+    get phase(): Phase { return this.creep.memory.job.phase; }
+    set phase(phase: Phase) { this.creep.memory.job.phase = phase; }
+
+    update(): void { this.source.covered = true; }
+
     static load(creep: Creep): StationaryHarvestJob {
-        // TODO: "type-check" remotable
-        let remotable = <RemotableSource>loadRemotable(creep.memory.job.source);
-        return new StationaryHarvestJob(creep, remotable, creep.memory.job.phase);
+        return new StationaryHarvestJob(creep);
     }
 }

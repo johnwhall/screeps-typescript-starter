@@ -9,58 +9,88 @@ enum Phase {
 }
 
 export class UpgradeJob extends Job {
-    readonly energyStore: RemotableEnergyStore;
-    readonly controller: RemotableController;
-    private _phase: Phase;
+    private _energyStore: RemotableEnergyStore;
+    private _controller: RemotableController;
 
-    constructor(creep: Creep, energyStore: RemotableEnergyStore, controller: RemotableController, phase?: Phase) {
-        super("upgrade", creep);
-        this.energyStore = energyStore;
-        this.controller = controller;
-        this._phase = phase || Phase.MOVE_TO_ENERGY;
-        if (phase === undefined) this.update(); // only update when job is being assigned, not when loaded from memory (if updated when loaded from memory, update will happen twice)
+    static newJob(creep: Creep, energyStore: RemotableEnergyStore, controller: RemotableController): UpgradeJob {
+        try {
+            creep.memory.job = {};
+            let job = new UpgradeJob(creep);
+            job.energyStore = energyStore;
+            job.controller = controller;
+            job.phase = Phase.MOVE_TO_ENERGY;
+            return job;
+        } catch (e) {
+            delete creep.memory.job;
+            throw e;
+        }
     }
 
+    constructor(creep: Creep) {
+        super("upgrade", creep);
+    }
+
+    get energyStore(): RemotableEnergyStore {
+        if (this._energyStore === undefined) {
+            // TODO: "type-check" remotables
+            let energyStore = <RemotableEnergyStore | undefined>loadRemotable(this.creep.memory.job.energyStore);
+            if (energyStore === undefined) throw new Error(`Null remotable energy store for upgrade job ${JSON.stringify(this.creep.memory.job)}`);
+            this._energyStore = energyStore;
+        }
+        return this._energyStore;
+    }
+
+    set energyStore(energyStore: RemotableEnergyStore) {
+        this._energyStore = energyStore;
+        this.creep.memory.job.energyStore = energyStore.save();
+    }
+
+    get controller(): RemotableController {
+        if (this._controller === undefined) {
+            // TODO: "type-check" remotables
+            let controller = <RemotableController | undefined>loadRemotable(this.creep.memory.job.controller);
+            if (controller === undefined) throw new Error(`Null remotable controller for upgrade job ${JSON.stringify(this.creep.memory.job)}`);
+            this._controller = controller;
+        }
+        return this._controller;
+    }
+
+    set controller(controller: RemotableController) {
+        this._controller = controller;
+        this.creep.memory.job.controller = controller.save();
+    }
+
+    get phase(): Phase { return this.creep.memory.job.phase; }
+    set phase(phase: Phase) { this.creep.memory.job.phase = phase; }
+
     run(): boolean {
-        switch (this._phase) {
+        switch (this.creep.memory.job.phase) {
             case Phase.MOVE_TO_ENERGY:
                 // Check if the source was assigned a stationary harvester since our job was assigned; cancel if so
                 if (isRemotableSource(this.energyStore) && this.energyStore.covered) return false;
-                if (this.creep.freeCapacity > 0 && this.moveTo(this.energyStore)) return true;
-                this._phase = Phase.LOAD;
+                if (this.creep.freeCapacity > 0 && this.moveInRangeTo(this.energyStore)) return true;
+                this.creep.memory.job.phase = Phase.LOAD;
 
             case Phase.LOAD:
                 if (this.loadEnergy(this.energyStore)) return true;
-                this._phase = Phase.MOVE_TO_CONTROLLER;
+                this.creep.memory.job.phase = Phase.MOVE_TO_CONTROLLER;
 
             case Phase.MOVE_TO_CONTROLLER:
-                if (this.moveTo(this.controller, 3)) return true;
-                this._phase = Phase.UPGRADE;
+                if (this.moveInRangeTo(this.controller, 3)) return true;
+                this.creep.memory.job.phase = Phase.UPGRADE;
 
             case Phase.UPGRADE:
                 this.creep.upgradeController(<StructureController>this.controller.liveObject);
                 return this.creep.carry.energy !== 0;
 
             default:
-                throw new Error(`Unknown phase ${this._phase} for creep ${this.creep.name}`);
+                throw new Error(`Unknown phase ${this.creep.memory.job.phase} for creep ${this.creep.name}`);
         }
     }
 
-    update(): void { this.energyStore.plannedEnergy -= this.creep.freeCapacity; }
-
-    save(): any {
-        return {
-            name: this.name,
-            energyStore: this.energyStore.save(),
-            controller: this.controller.save(),
-            phase: this._phase,
-        };
+    update(): void {
+        if (this.phase <= Phase.LOAD) this.energyStore.plannedEnergy -= this.creep.freeCapacity;
     }
 
-    static load(creep: Creep): UpgradeJob {
-        // TODO: "type-check" remotables
-        let energyStore = <RemotableEnergyStore>loadRemotable(creep.memory.job.energyStore);
-        let controller = <RemotableController>loadRemotable(creep.memory.job.controller);
-        return new UpgradeJob(creep, energyStore, controller, creep.memory.job.phase);
-    }
+    static load(creep: Creep): UpgradeJob { return new UpgradeJob(creep); }
 }

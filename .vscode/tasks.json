@@ -7,6 +7,12 @@
       "type": "npm",
       "script": "deploy",
       "problemMatcher": [],
+      "group": "build"
+    },
+    {
+      "type": "npm",
+      "script": "local",
+      "problemMatcher": [],
       "group": {
         "kind": "build",
         "isDefault": true

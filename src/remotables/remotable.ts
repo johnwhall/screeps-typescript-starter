@@ -54,7 +54,7 @@ export function isRemotableSource(remotable: RemotableEnergyStore): remotable is
     return (<RemotableSource>remotable).covered !== undefined;
 }
 
-export function load(obj: any): Remotable<RoomObject> {
+export function load(obj: any): Remotable<RoomObject> | undefined {
     if (typeof obj != "string") throw new Error(`Cannot load remotable from ${obj}`);
     if (obj.slice(0, 5) == "flag:") return Remote.load(obj);
     else if (obj.slice(0, 3) == "id:") return Local.load(obj);
