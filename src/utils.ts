@@ -1,10 +1,10 @@
-export function nextUid(): string {
-    let prevTime = Number(Memory.previousUidTime) || Game.time;
-    let num = (Number(Memory.previousUidNum) || 0) + 1;
+export function nextUuid(): string {
+    let prevTime = Number(Memory.previousUuidTime) || Game.time;
+    let num = (Number(Memory.previousUuidNum) || 0) + 1;
     if (prevTime != Game.time) num = 1;
     let uid = Game.time + "-" + num;
-    Memory.previousUidTime = Game.time;
-    Memory.previousUidNum = num;
+    Memory.previousUuidTime = Game.time;
+    Memory.previousUuidNum = num;
     return uid;
 }
 

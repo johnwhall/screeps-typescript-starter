@@ -10,6 +10,8 @@ declare global {
         homeRoom: Room | undefined;
         job: Job | undefined;
         doJob(): void;
+        buildPower(energy: number): number;
+        buildPowerMax: number;
     }
 }
 
@@ -38,12 +40,12 @@ export function init() {
             try {
                 if (!this.job.run()) {
                     // job finished
-                    delete this.job; // TOD: why does this.job work? shouldn't it be this._job?
+                    delete this.job; // TODO: why does this.job work? shouldn't it be this._job?
                     delete this.memory.job;
                 }
             } catch (e) {
                 log.logException(e);
-                delete this.job; // TOD: why does this.job work? shouldn't it be this._job?
+                delete this.job; // TODO: why does this.job work? shouldn't it be this._job?
                 delete this.memory.job;
             }
         }
@@ -90,5 +92,28 @@ export function init() {
                 }
             }
         });
+    }
+
+    if (!Creep.prototype.buildPowerMax) {
+        Object.defineProperty(Creep.prototype, "buildPowerMax", {
+            get: function() {
+                if (this.memory.buildPowerMax === undefined || this.memory.buildPowerMax === null) {
+                    console.log(this.getActiveBodyparts(WORK));
+                    this.memory.buildPowerMax = this.getActiveBodyparts(WORK) * BUILD_POWER; // TODO: account for boosts
+                }
+                return this.memory.buildPowerMax;
+            }
+        });
+    }
+
+    if (!Creep.prototype.buildPower) {
+        Creep.prototype.buildPower = function(energy: number): number {
+            if (this.hits === this.hitsMax) return Math.min(energy, this.buildPowerMax);
+            let power = 0;
+            for (let part of this.body) {
+                if (part.type == WORK && part.hits > 0) power += BUILD_POWER; // TODO: account for boosts
+            }
+            return Math.min(energy, power);
+        }
     }
 }

@@ -7,16 +7,21 @@
       "type": "npm",
       "script": "deploy",
       "problemMatcher": [],
-      "group": "build"
+      // "group": "build"
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
     },
     {
       "type": "npm",
       "script": "local",
       "problemMatcher": [],
-      "group": {
-        "kind": "build",
-        "isDefault": true
-      }
+      // "group": {
+      //   "kind": "build",
+      //   "isDefault": true
+      // }
+      "group": "build"
     },
     {
       "type": "typescript",

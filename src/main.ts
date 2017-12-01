@@ -58,10 +58,11 @@ function mloop() {
                 });
 
                 let unemployedWorkers = _.filter(room.assignedCreeps[Caste.WORKER], (c: Creep) => !c.job);
-                console.log(`unemployedWorkers: ${unemployedWorkers}`);
 
                 // BUILDERS
 
+                // TODO: if two workers and one is unemployed, but the other will finish the last build target, this keeps ordering the
+                //       unemployed worker to pick up 0 and build the last target for 0?
                 let buildTargets = room.assignedConstructionSites;
                 for (var i = 0; i < unemployedWorkers.length; i++) {
                     var worker = unemployedWorkers[i];
@@ -117,7 +118,6 @@ function mloop() {
         _.forEach(Game.creeps, (c) => c.doJob());
 
         _.forEach(Game.constructionSites, (cs) => {
-            // TODO: min(plannedProgress, progressTotal) in case multiple creeps are building a structure that is just about to finish, pushing plannedProgress over the top
             let plannedProgressStr = cs.remotable.plannedProgress === cs.progress ? "" : ` (${cs.remotable.plannedProgress})`;
             new RoomVisual(cs.pos.roomName).text(`${cs.progress}${plannedProgressStr} / ${cs.progressTotal}`, cs.pos.x, cs.pos.y + 0.6, { font: 0.35 });
         });

@@ -1,5 +1,26 @@
-import { RemotableEnergyStore } from "../remotables/remotable";
+import { Remotable, RemotableEnergyStore } from "../remotables/remotable";
 import { swapIndices } from "../utils";
+
+export class JobTarget<K extends RoomObject, T extends Remotable<K>> {
+    constructor(public readonly site: T) { }
+    get pos(): RoomPosition { return this.site.pos; }
+    get actual(): JobTarget<K, T> { return this; }
+    public actualFactory(_site: T): JobTarget<K, T> { return this; }
+}
+
+export class PossibleJobTarget<K extends RoomObject, T extends Remotable<K>> {
+    private _target?: JobTarget<K, T>;
+    constructor(public readonly site: T | undefined, public readonly actualFactory: (site: T) => JobTarget<K, T>) { }
+    get pos(): RoomPosition | undefined { return this.site === undefined ? undefined : this.site.pos; }
+
+    get actual(): JobTarget<K, T> {
+        if (this._target === undefined) {
+            if (this.site === undefined) throw new Error('Attempting to dereference missing PossibleJobTarget');
+            this._target = this.actualFactory(this.site);
+        }
+        return this._target;
+    }
+}
 
 export abstract class Job {
     readonly creep: Creep;

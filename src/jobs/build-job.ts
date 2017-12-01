@@ -1,4 +1,4 @@
-import { Job } from "./job";
+import { Job, JobTarget, PossibleJobTarget } from "./job";
 import { load as loadRemotable, isRemotableSource, RemotableEnergyStore, RemotableConstructionSite } from "../remotables/remotable";
 
 enum Phase {
@@ -8,28 +8,17 @@ enum Phase {
     BUILD
 }
 
-export class BuildTarget {
-    constructor(public readonly site: RemotableConstructionSite, public myRemainingProgress: number) { }
-    get pos(): RoomPosition { return this.site.pos; }
-    get actual(): BuildTarget { return this; }
-    get alreadyFinished(): boolean { return false; }
+export class BuildTarget extends JobTarget<ConstructionSite, RemotableConstructionSite> {
+    constructor(site: RemotableConstructionSite, public myRemainingProgress: number) { super(site); }
     save(): any { return { site: this.site.save(), myRemainingProgress: this.myRemainingProgress } }
     toString(): string { return `${this.site.toString()} (${this.myRemainingProgress})` }
 }
 
-class PossibleBuildTarget {
-    private _target?: BuildTarget;
-    constructor(public readonly site: RemotableConstructionSite | undefined, public myRemainingProgress: number) { }
-    get pos(): RoomPosition | undefined { return this.site === undefined ? undefined : this.site.pos; }
-    get alreadyFinished(): boolean { return this.pos === undefined; }
-
-    get actual(): BuildTarget {
-        if (this._target === undefined) {
-            if (this.site === undefined) throw new Error('Attempting to dereference missing PossibleTarget');
-            this._target = new BuildTarget(this.site, this.myRemainingProgress);
-        }
-        return this._target;
+class PossibleBuildTarget extends PossibleJobTarget<ConstructionSite, RemotableConstructionSite> {
+    constructor(site: RemotableConstructionSite | undefined, public myRemainingProgress: number) {
+        super(site, (site: RemotableConstructionSite) => new BuildTarget(site, myRemainingProgress));
     }
+    get pos(): RoomPosition | undefined { return this.site === undefined ? undefined : this.site.pos; }
 }
 
 interface IBuildTargetMemory {
@@ -44,16 +33,17 @@ class BuildTargetMemory implements IBuildTargetMemory {
 // TODO: all energy costs should be updated to take boosts into account
 export class BuildJob extends Job {
     private _energyStore: RemotableEnergyStore;
-    private _targets: PossibleBuildTarget[]; // TODO: but I need to load them every time for update()
+    private _targets: PossibleBuildTarget[];
+    private _totalRemainingProgress: number;
 
     static newJob(creep: Creep, energyStore: RemotableEnergyStore, targets: BuildTarget[]): BuildJob {
         try {
-        creep.memory.job = {};
-        let job = new BuildJob(creep);
-        job.energyStore = energyStore;
-        job.targets = targets;
-        job.phase = Phase.MOVE_TO_ENERGY;
-        return job;
+            creep.memory.job = {};
+            let job = new BuildJob(creep);
+            job.energyStore = energyStore;
+            job.targets = targets;
+            job.phase = Phase.MOVE_TO_ENERGY;
+            return job;
         } catch (e) {
             delete creep.memory.job;
             throw e;
@@ -108,7 +98,7 @@ export class BuildJob extends Job {
             case Phase.MOVE_TO_ENERGY:
                 // Check if the source was assigned a stationary harvester since our job was assigned; cancel if so
                 if (isRemotableSource(this.energyStore) && this.energyStore.covered) return false;
-                if (this.moveInRangeTo(this.energyStore)) return true; // TODO: don't move to energy store if we already have enough energy
+                if (this.totalRemainingEnergyRequirement > this.creep.carry.energy && this.moveInRangeTo(this.energyStore)) return true; // TODO: cache whether or not we need to move to the energy store since this will not change in transit
                 this.creep.memory.job.phase = Phase.LOAD;
 
             case Phase.LOAD:
@@ -130,7 +120,7 @@ export class BuildJob extends Job {
                 }
 
                 if (this.creep.build(<ConstructionSite>this.targets[0].actual.site.liveObject) === OK) {
-                    this.creep.memory.job.targets[0].myRemainingProgress -= 5; // TODO: this should be ... -= max(numWorkParts * BUILD_POWER, carry.energy, target.hitsMax - target.hits) (and adjust for boosts)
+                    this.creep.memory.job.targets[0].myRemainingProgress -= this.creep.buildPower(this.creep.carry.energy); // TODO: what if we aren't supposed to use all our energy on this target?
                     return true;
                 }
                 return false;
@@ -146,22 +136,30 @@ export class BuildJob extends Job {
     }
 
     get totalRemainingProgress(): number {
-        let trp = 0;
-        for (let i = 0; i < this.targets.length; i++) trp += this.targets[i].myRemainingProgress;
-        return trp;
+        if (this._totalRemainingProgress === undefined) {
+            let trp = 0;
+            for (let i = 0; i < this.targets.length; i++) trp += this.targets[i].myRemainingProgress;
+            return trp;
+        }
+        return this._totalRemainingProgress;
     }
 
-    update(): void {
-        if (this.phase <= Phase.LOAD) this.energyStore.plannedEnergy -= this.totalRemainingProgress;
-        _.forEach(this.targets, (t) => { if (t.site) t.site.plannedProgress += t.myRemainingProgress; });
+    get totalRemainingEnergyRequirement(): number {
+        if (this.phase > Phase.LOAD) return 0;
+        return this.totalRemainingProgress / BUILD_POWER;
     }
 
     private removeFinishedTargets(targets: PossibleBuildTarget[]): BuildTarget[] {
         let realTargets: BuildTarget[] = [];
         for (let i = 0; i < targets.length; i++) {
-            if (targets[i].site !== undefined) realTargets.push(<BuildTarget>targets[i]);
+            if (targets[i].site !== undefined) realTargets.push(<BuildTarget>targets[i].actual);
         }
         return realTargets;
+    }
+
+    update(): void {
+        if (this.phase <= Phase.LOAD) this.energyStore.plannedEnergy -= this.totalRemainingProgress;
+        _.forEach(this.targets, (t) => { if (t.site) t.site.plannedProgress += t.myRemainingProgress; });
     }
 
     static load(creep: Creep): BuildJob {

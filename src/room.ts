@@ -2,7 +2,7 @@ import { SpawnQueueItem } from "./spawn-queue-item";
 import { Caste, selectParts } from "./caste";
 import { RemotableSource, RemotableContainer, RemotableConstructionSite } from "./remotables/remotable";
 import { FlagType } from "./flags/flag";
-import { nextUid } from "./utils";
+import { nextUuid } from "./utils";
 
 declare global {
     interface Room {
@@ -154,8 +154,7 @@ export function init() {
             _.forEach(this.find(FIND_MY_SPAWNS), (spawn: Spawn) => {
                 let item: SpawnQueueItem = this.spawnQueue[0];
                 if (!item) return;
-                // let name = `${item.caste.toLowerCase().replace("_", " ")} ${Game.time}`; // TODO: not unique if multiple spawns or multiple rooms attempt to spawn a creep of the same caste
-                let name = `${item.caste.toLowerCase().replace("_", " ")} ${nextUid()}`;
+                let name = `${item.caste.toLowerCase().replace("_", " ")} ${nextUuid()}`;
                 if (spawn.spawnCreep(item.parts, name, { memory: item.memory }) == OK) {
                     console.log(`Room ${this.name} spawning new ${item.caste}: ${name} - ${item.parts} (cost: ${item.cost})`);
                     this.memory.spawnQueue.splice(0, 1);
