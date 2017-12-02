@@ -1,16 +1,14 @@
 import * as Config from "./config/config";
-
 import * as Profiler from "screeps-profiler";
 import { log } from "./lib/logger/log";
 
-import { Caste } from "./caste";
-import { StationaryHarvestJob } from "./jobs/stationary-harvest-job";
-import { UpgradeJob } from "./jobs/upgrade-job";
-
 import { init } from "./init";
-import { BuildJob, BuildTarget } from "./jobs/build-job";
+import { Caste } from "./caste";
 import { RemotableEnergyStore, RemotableContainer, RemotableStorage } from "remotables/remotable";
-import { HaulTarget, HaulJob } from "./jobs/haul-job";
+import { employUpgraders } from "./planning/upgraders";
+import { employStationaryHarvesters } from "./planning/stationary-harvesters";
+import { employHaulers } from "./planning/haulers";
+import { employBuilders } from "./planning/builders";
 
 if (Config.USE_PROFILER) Profiler.enable();
 
@@ -18,16 +16,6 @@ log.debug(`Scripts bootstrapped`);
 if (__REVISION__) log.debug(`Revision ID: ${__REVISION__}`);
 
 init();
-
-function findEnergyStore(creep: Creep, room: Room, totalEnergyRequired: number): RemotableEnergyStore { // TODO: optimize
-    let containersAndStorage: RemotableEnergyStore[] = [];
-    for (let i = 0; i < room.assignedContainers.length; i++) {
-        if (room.assignedContainers[i].plannedEnergy >= totalEnergyRequired - creep.carry.energy) containersAndStorage.push(room.assignedContainers[i]);
-    }
-    if (room.storage && room.storage.remotable.plannedEnergy >= totalEnergyRequired - creep.carry.energy) containersAndStorage.push(room.storage.remotable);
-    let bestStore = creep.pos.findClosestByPath(containersAndStorage);
-    return bestStore || creep.pos.findClosestByPath(room.assignedSources, { filter: { covered: false } });
-}
 
 function mloop() {
     try {
@@ -52,113 +40,29 @@ function mloop() {
 
                 let roomUncoveredSources = _.filter(room.assignedSources, (s) => !s.covered);
 
-                // STATIONARY HARVESTERS
-
-                _.forEach(room.assignedCreeps[Caste.STATIONARY_HARVESTER].filter((c) => !c.job), (c) => {
-                    if (roomUncoveredSources.length == 0) return false;
-                    let source = roomUncoveredSources.splice(0, 1)[0];
-                    console.log(`Ordering ${c.name} to harvest from ${source}`);
-                    c.job = StationaryHarvestJob.newJob(c, source);
-                    c.job.update();
-                });
-
+                let unemployedStationaryHarvesters = _.filter(room.assignedCreeps[Caste.STATIONARY_HARVESTER], (c: Creep) => !c.job);
                 let unemployedHaulers = _.filter(room.assignedCreeps[Caste.HAULER], (c: Creep) => !c.job);
                 let unemployedWorkers = _.filter(room.assignedCreeps[Caste.WORKER], (c: Creep) => !c.job);
 
-                // HAULERS
+                // STATIONARY HARVESTERS
+                employStationaryHarvesters(unemployedStationaryHarvesters, roomUncoveredSources);
 
+                // HAULERS
                 // TODO: optimize
                 let energySinks = (<(RemotableContainer | RemotableStorage)[]>room.assignedContainers.filter((c) => !_.contains(_.pluck(room.assignedSources, "container"), c)));
                 if (room.storage) energySinks.push(room.storage.remotable);
                 let energySources = (<RemotableEnergyStore[]>room.assignedContainers).concat(roomUncoveredSources).filter((es) => !_.contains(energySinks, es));
-
-                // console.log("energySources: " + energySources);
-                // console.log("energySinks: " + energySinks);
-
                 let haulTargets = _.filter(energySinks, (es) => es.plannedEnergy < es.energyCapacity);
-                for (let i = 0; i < unemployedHaulers.length; i++) {
-                    let hauler = unemployedHaulers[i];
-                    let targets = [];
-                    let maxAvailableEnergyStore = _.max(energySources, (es) => es.plannedEnergy);
-                    let capacity = Math.min(maxAvailableEnergyStore.plannedEnergy, hauler.freeCapacity) + hauler.carry.energy;
-                    if (capacity === 0) continue;
-                    let searchOrigin = hauler.pos;
-                    let totalEnergyRequired = 0;
-
-                    while (capacity > 0 && haulTargets.length > 0) {
-                        let target = searchOrigin.findClosestByPath([haulTargets[0]]);
-                        if (!target) break;
-                        let energyRequired = Math.min(target.energyCapacity - target.plannedEnergy, capacity);
-                        targets.push(new HaulTarget(target, energyRequired));
-                        capacity -= energyRequired;
-                        totalEnergyRequired += energyRequired;
-                        if (target.plannedEnergy  + energyRequired >= target.energyCapacity) {
-                            haulTargets.splice(0, 1);
-                        }
-                        searchOrigin = target.pos;
-                    }
-
-                    if (targets.length > 0) {
-                        let energyStore = hauler.pos.findClosestByPath(energySources, { filter: (es: RemotableEnergyStore) => es.energy >= totalEnergyRequired - hauler.carry.energy });
-                        if (!energyStore) continue;
-                        console.log(`Ordering ${hauler.name} to pick up ${totalEnergyRequired} from ${energyStore} and deliver to ${targets}`);
-                        hauler.job = HaulJob.newJob(hauler, energyStore, targets);
-                        hauler.job.update();
-                        unemployedHaulers.splice(i--, 1);
-                    }
-                }
+                employHaulers(unemployedHaulers, energySources, haulTargets);
 
                 // BUILDERS
-
                 let energyStores = (<RemotableEnergyStore[]>room.assignedContainers).concat(roomUncoveredSources);
                 if (room.storage) energyStores.push(room.storage.remotable);
                 let buildTargets = _.filter(room.assignedConstructionSites, (cs) => cs.plannedProgress < cs.progressTotal);
-                for (let i = 0; i < unemployedWorkers.length; i++) {
-                    let worker = unemployedWorkers[i];
-                    let targets = [];
-                    let maxAvailableEnergyStore = _.max(energyStores, (es) => es.plannedEnergy);
-                    let capacity = Math.min(maxAvailableEnergyStore.plannedEnergy, worker.freeCapacity) + worker.carry.energy;
-                    if (capacity === 0) continue;
-                    let searchOrigin = worker.pos;
-                    let totalEnergyRequired = 0;
-
-                    while (capacity > 0 && buildTargets.length > 0) {
-                        let target = searchOrigin.findClosestByPath([buildTargets[0]]);
-                        if (!target) break;
-                        let energyRequired = Math.min(target.progressTotal - target.plannedProgress, capacity);
-                        targets.push(new BuildTarget(target, energyRequired));
-                        capacity -= energyRequired;
-                        totalEnergyRequired += energyRequired;
-                        if (target.plannedProgress  + energyRequired >= target.progressTotal) {
-                            buildTargets.splice(0, 1);
-                        }
-                        searchOrigin = target.pos;
-                    }
-
-                    if (targets.length > 0) {
-                        let energyStore = findEnergyStore(worker, room, totalEnergyRequired);
-                        if (!energyStore) continue;
-                        console.log(`Ordering ${worker.name} to pick up ${totalEnergyRequired} from ${energyStore} and build ${targets}`);
-                        worker.job = BuildJob.newJob(worker, energyStore, targets);
-                        worker.job.update();
-                        unemployedWorkers.splice(i--, 1);
-                    }
-                }
+                employBuilders(room, unemployedWorkers, energyStores, buildTargets);
 
                 // UPGRADERS
-
-                for (let i = 0; i < unemployedWorkers.length; i++) {
-                    let worker = unemployedWorkers[i];
-                    let maxAvailableEnergyStore = _.max(energyStores, (es) => es.plannedEnergy);
-                    let capacity = Math.min(maxAvailableEnergyStore.plannedEnergy, worker.freeCapacity) + worker.carry.energy;
-                    if (capacity === 0) continue;
-                    let energyStore = findEnergyStore(worker, room, capacity);
-                    if (!energyStore) continue;
-                    console.log(`Ordering ${worker.name} to pick up ${capacity} from ${energyStore} and upgrade ${room.controller.remotable}`);
-                    worker.job = UpgradeJob.newJob(worker, energyStore, room.controller.remotable, capacity);
-                    worker.job.update();
-                    unemployedWorkers.splice(i--, 1);
-                }
+                employUpgraders(room, unemployedWorkers, energyStores);
 
                 if (unemployedWorkers.length > 0) console.log("unemployedWorkers at end of tick: " + unemployedWorkers);
 
