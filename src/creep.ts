@@ -98,7 +98,6 @@ export function init() {
         Object.defineProperty(Creep.prototype, "buildPowerMax", {
             get: function() {
                 if (this.memory.buildPowerMax === undefined || this.memory.buildPowerMax === null) {
-                    console.log(this.getActiveBodyparts(WORK));
                     this.memory.buildPowerMax = this.getActiveBodyparts(WORK) * BUILD_POWER; // TODO: account for boosts
                 }
                 return this.memory.buildPowerMax;

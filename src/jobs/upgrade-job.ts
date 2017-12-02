@@ -12,12 +12,13 @@ export class UpgradeJob extends Job {
     private _energyStore: RemotableEnergyStore;
     private _controller: RemotableController;
 
-    static newJob(creep: Creep, energyStore: RemotableEnergyStore, controller: RemotableController): UpgradeJob {
+    static newJob(creep: Creep, energyStore: RemotableEnergyStore, controller: RemotableController, totalEnergyRequired: number): UpgradeJob {
         try {
             creep.memory.job = {};
             let job = new UpgradeJob(creep);
             job.energyStore = energyStore;
             job.controller = controller;
+            job.totalEnergyRequired = totalEnergyRequired;
             job.phase = Phase.MOVE_TO_ENERGY;
             return job;
         } catch (e) {
@@ -58,6 +59,9 @@ export class UpgradeJob extends Job {
         this.creep.memory.job.controller = controller.save();
     }
 
+    get totalEnergyRequired(): number { return this.creep.memory.job.totalEnergyRequired; }
+    set totalEnergyRequired(totalEnergyRequired: number) { this.creep.memory.job.totalEnergyRequired = totalEnergyRequired; }
+
     get phase(): Phase { return this.creep.memory.job.phase; }
     set phase(phase: Phase) { this.creep.memory.job.phase = phase; }
 
@@ -70,7 +74,7 @@ export class UpgradeJob extends Job {
                 this.creep.memory.job.phase = Phase.LOAD;
 
             case Phase.LOAD:
-                if (this.loadEnergy(this.energyStore)) return true;
+                if (this.loadEnergy(this.energyStore, this.totalEnergyRequired)) return true;
                 this.creep.memory.job.phase = Phase.MOVE_TO_CONTROLLER;
 
             case Phase.MOVE_TO_CONTROLLER:
@@ -87,7 +91,7 @@ export class UpgradeJob extends Job {
     }
 
     update(): void {
-        if (this.phase <= Phase.LOAD) this.energyStore.plannedEnergy -= this.creep.freeCapacity;
+        if (this.phase <= Phase.LOAD) this.energyStore.plannedEnergy -= Math.max(0, this.totalEnergyRequired - this.creep.carry.energy);
     }
 
     static load(creep: Creep): UpgradeJob { return new UpgradeJob(creep); }

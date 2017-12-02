@@ -36,12 +36,13 @@ function mloop() {
         _.forEach(Game.flags, (f) => !f.checkRemove() && f.update());
 
         // _.forEach(Game.creeps, (c) => console.log(`creep ${c.name} memory: ${JSON.stringify(c.memory)}`));
+        // _.forEach(Game.creeps, (c) => delete c.memory.job);
 
         _.forEach(Game.rooms, (room) => {
             try {
                 if (!room.controller || !room.controller.my) return;
 
-                room.casteTarget(Caste.STATIONARY_HARVESTER, 0);
+                room.casteTarget(Caste.STATIONARY_HARVESTER, 1);
                 room.casteTarget(Caste.WORKER, 1);
 
                 _.forEach(room.assignedCreeps, (cs) => _.forEach(cs, (c) => { if (c.job) c.job.update(); }));
@@ -49,6 +50,7 @@ function mloop() {
                 let roomUncoveredSources = _.filter(room.assignedSources, (s) => !s.covered);
 
                 // STATIONARY HARVESTERS
+
                 _.forEach(room.assignedCreeps[Caste.STATIONARY_HARVESTER].filter((c) => !c.job), (c) => {
                     if (roomUncoveredSources.length == 0) return false;
                     let source = roomUncoveredSources.splice(0, 1)[0];
@@ -61,52 +63,56 @@ function mloop() {
 
                 // BUILDERS
 
-                // TODO: if two workers and one is unemployed, but the other will finish the last build target, this keeps ordering the
-                //       unemployed worker to pick up 0 and build the last target for 0?
-                let buildTargets = room.assignedConstructionSites;
-                for (var i = 0; i < unemployedWorkers.length; i++) {
-                    var worker = unemployedWorkers[i];
-                    var targets = [];
-                    var capacity = worker.freeCapacity + worker.carry.energy;
-                    var searchOrigin = worker.pos;
-                    var totalEnergyRequired = 0;
+                let energyStores = (<RemotableEnergyStore[]>room.assignedContainers).concat(roomUncoveredSources); // TODO: add storage
+                let buildTargets = _.filter(room.assignedConstructionSites, (cs) => cs.plannedProgress < cs.progressTotal);
+                for (let i = 0; i < unemployedWorkers.length; i++) {
+                    let worker = unemployedWorkers[i];
+                    let targets = [];
+                    let maxAvailableEnergyStore = _.max(energyStores, (es) => es.plannedEnergy);
+                    let capacity = Math.min(maxAvailableEnergyStore.plannedEnergy, worker.freeCapacity) + worker.carry.energy;
+                    if (capacity === 0) continue;
+                    let searchOrigin = worker.pos;
+                    let totalEnergyRequired = 0;
 
                     while (capacity > 0 && buildTargets.length > 0) {
-                        var target = searchOrigin.findClosestByPath([buildTargets[0]]);
+                        let target = searchOrigin.findClosestByPath([buildTargets[0]]);
                         if (!target) break;
-                        var energyRequired = Math.min(target.progressTotal - target.plannedProgress, capacity);
+                        let energyRequired = Math.min(target.progressTotal - target.plannedProgress, capacity);
                         targets.push(new BuildTarget(target, energyRequired));
-                        capacity -= energyRequired; // TODO: check max available energy in assigned energy stores
+                        capacity -= energyRequired;
                         totalEnergyRequired += energyRequired;
                         if (target.plannedProgress  + energyRequired >= target.progressTotal) {
-                            console.log('Removing ' + target + ' from buildTargets. Length before: ' + buildTargets.length);
                             buildTargets.splice(0, 1);
-                            console.log('Removed ' + target + ' from buildTargets. Length after: ' + buildTargets.length);
                         }
                         searchOrigin = target.pos;
                     }
 
                     if (targets.length > 0) {
-                        var supply = findEnergyStore(worker, room, totalEnergyRequired);
-                        if (!supply) continue;
-                        // console.log(`Ordering ${worker.name} to pick up ${totalEnergyRequired} from ${supply} and build ${targets.map((t) => t.toString()).join(', ')}`);
-                        console.log(`Ordering ${worker.name} to pick up ${totalEnergyRequired} from ${supply} and build ${targets}`);
-                        // console.log('Ordering ' + worker.name + ' to pick up ' + totalEnergyRequired + ' from ' + supply + ' and build ' + targets);
-                        worker.job = BuildJob.newJob(worker, supply, targets);
+                        let energyStore = findEnergyStore(worker, room, totalEnergyRequired);
+                        if (!energyStore) continue;
+                        console.log(`Ordering ${worker.name} to pick up ${totalEnergyRequired} from ${energyStore} and build ${targets}`);
+                        worker.job = BuildJob.newJob(worker, energyStore, targets);
                         worker.job.update();
                         unemployedWorkers.splice(i--, 1);
                     }
                 }
 
                 // UPGRADERS
-                while (unemployedWorkers.length > 0) {
-                    let worker = unemployedWorkers[0];
-                    let energyStore = worker.pos.findClosestByPath(roomUncoveredSources); // TODO: make sure selected store has enough energy
-                    console.log(`Ordering ${worker.name} to pick up ${worker.freeCapacity} from ${energyStore} and upgrade ${room.controller.remotable}`);
-                    worker.job = UpgradeJob.newJob(worker, energyStore, room.controller.remotable);
+
+                for (let i = 0; i < unemployedWorkers.length; i++) {
+                    let worker = unemployedWorkers[i];
+                    let maxAvailableEnergyStore = _.max(energyStores, (es) => es.plannedEnergy);
+                    let capacity = Math.min(maxAvailableEnergyStore.plannedEnergy, worker.freeCapacity) + worker.carry.energy;
+                    if (capacity === 0) continue;
+                    let energyStore = findEnergyStore(worker, room, capacity);
+                    if (!energyStore) continue;
+                    console.log(`Ordering ${worker.name} to pick up ${capacity} from ${energyStore} and upgrade ${room.controller.remotable}`);
+                    worker.job = UpgradeJob.newJob(worker, energyStore, room.controller.remotable, capacity);
                     worker.job.update();
-                    unemployedWorkers.splice(0, 1);
+                    unemployedWorkers.splice(i--, 1);
                 }
+
+                if (unemployedWorkers.length > 0) console.log("unemployedWorkers at end of tick: " + unemployedWorkers);
 
                 room.queueFromTargets();
                 room.spawnFromQueue();
@@ -115,11 +121,21 @@ function mloop() {
             }
         });
 
-        _.forEach(Game.creeps, (c) => c.doJob());
+        // _.forEach(Game.creeps, (c) => { if (c.caste !== Caste.STATIONARY_HARVESTER) c.doJob() });
+        _.forEach(Game.creeps, (c) => c.doJob() );
 
         _.forEach(Game.constructionSites, (cs) => {
             let plannedProgressStr = cs.remotable.plannedProgress === cs.progress ? "" : ` (${cs.remotable.plannedProgress})`;
             new RoomVisual(cs.pos.roomName).text(`${cs.progress}${plannedProgressStr} / ${cs.progressTotal}`, cs.pos.x, cs.pos.y + 0.6, { font: 0.35 });
+        });
+
+        _.forEach(Game.rooms, (room) => {
+            if (!room.controller || !room.controller.my) return;
+
+            for (let cont of room.assignedContainers) {
+                let plannedEnergyStr = cont.plannedEnergy === cont.energy ? "" : ` (${cont.plannedEnergy})`;
+                room.visual.text(`${cont.energy}${plannedEnergyStr} / ${cont.energyCapacity}`, cont.pos.x, cont.pos.y + 0.6, { font: 0.35 });
+            }
         });
     } catch (e) {
         log.logException(e);

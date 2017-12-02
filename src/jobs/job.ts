@@ -45,8 +45,12 @@ export abstract class Job {
         // TODO: consider lookFor or similar instead of findInRange (for performance reasons)
         let droppedEnergy = <Resource<RESOURCE_ENERGY> | undefined>this.creep.pos.findInRange(FIND_DROPPED_RESOURCES, 1, { filter: (r: Resource) => r.resourceType == RESOURCE_ENERGY })[0];
         if (droppedEnergy !== undefined) this.creep.pickup(droppedEnergy);
-        else if (energyStore.liveObject instanceof Source) this.creep.harvest(energyStore.liveObject);
-        else this.creep.withdraw(<Structure>energyStore.liveObject, RESOURCE_ENERGY);
+
+        // If someone beat us to droppedEnergy, loadEnergy will be called again next tick, and we'll harvest again or withdraw an adjusted amount
+        let remainingAmount = targetAmount - this.creep.carry.energy - (droppedEnergy === undefined ? 0 :droppedEnergy.amount);
+        if (energyStore.liveObject instanceof Source) this.creep.harvest(energyStore.liveObject);
+        else this.creep.withdraw(<Structure>energyStore.liveObject, RESOURCE_ENERGY, remainingAmount);
+
         return true;
     }
 

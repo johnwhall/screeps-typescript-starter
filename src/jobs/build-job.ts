@@ -96,11 +96,12 @@ export class BuildJob extends Job {
             case Phase.MOVE_TO_ENERGY:
                 // Check if the source was assigned a stationary harvester since our job was assigned; cancel if so
                 if (isRemotableSource(this.energyStore) && this.energyStore.covered) return false;
-                if (this.totalRemainingEnergyRequirement > this.creep.carry.energy && this.moveInRangeTo(this.energyStore)) return true; // TODO: cache whether or not we need to move to the energy store since this will not change in transit
+                if (this.creep.memory.job.needToLoad === undefined) this.creep.memory.job.needToLoad = this.totalRemainingEnergyRequirement > this.creep.carry.energy;
+                if (this.creep.memory.job.needToLoad && this.moveInRangeTo(this.energyStore)) return true;
                 this.creep.memory.job.phase = Phase.LOAD;
 
             case Phase.LOAD:
-                if (this.loadEnergy(this.energyStore, _.sum(this.targets, (t) => t.myRemainingProgress))) return true;
+                if (this.loadEnergy(this.energyStore, this.totalRemainingEnergyRequirement)) return true;
                 this.targets = this.selectNextTarget(this.removeFinishedTargets(this.targets));
                 if (this.targets.length == 0) return false;
                 this.creep.memory.job.phase = Phase.MOVE_TO_CONSTRUCTION_SITE;
@@ -118,7 +119,7 @@ export class BuildJob extends Job {
                 }
 
                 if (this.creep.build(<ConstructionSite>this.targets[0].actual.site.liveObject) === OK) {
-                    this.creep.memory.job.targets[0].myRemainingProgress -= this.creep.buildPower(this.creep.carry.energy); // TODO: what if we aren't supposed to use all our energy on this target?
+                    this.creep.memory.job.targets[0].myRemainingProgress -= this.creep.buildPower(this.creep.carry.energy);
                     return true;
                 }
                 return false;
@@ -144,7 +145,7 @@ export class BuildJob extends Job {
 
     get totalRemainingEnergyRequirement(): number {
         if (this.phase > Phase.LOAD) return 0;
-        return this.totalRemainingProgress / BUILD_POWER;
+        return this.totalRemainingProgress;
     }
 
     private removeFinishedTargets(targets: PossibleBuildTarget[]): BuildTarget[] {
@@ -156,7 +157,7 @@ export class BuildJob extends Job {
     }
 
     update(): void {
-        if (this.phase <= Phase.LOAD) this.energyStore.plannedEnergy -= this.totalRemainingProgress;
+        if (this.phase <= Phase.LOAD) this.energyStore.plannedEnergy -= (this.totalRemainingEnergyRequirement - this.creep.carry.energy);
         _.forEach(this.targets, (t) => { if (t.site) t.site.plannedProgress += t.myRemainingProgress; });
     }
 
