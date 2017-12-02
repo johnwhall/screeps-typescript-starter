@@ -2,6 +2,7 @@ import { LocalStructure } from "./local-structure";
 import { RemotableContainer } from "../remotables/remotable";
 
 export class LocalContainer extends LocalStructure<StructureContainer, STRUCTURE_CONTAINER> implements RemotableContainer {
+    readonly type = STRUCTURE_CONTAINER;
     plannedEnergy: number;
 
     constructor(liveObject: StructureContainer) {

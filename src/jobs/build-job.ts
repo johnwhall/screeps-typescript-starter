@@ -1,5 +1,5 @@
 import { Job, JobTarget, PossibleJobTarget } from "./job";
-import { load as loadRemotable, isRemotableSource, RemotableEnergyStore, RemotableConstructionSite } from "../remotables/remotable";
+import { load as loadRemotable, isRemotableSource, RemotableEnergyStore, RemotableConstructionSite, REMOTABLE_TYPE_SOURCE, REMOTABLE_TYPE_CONSTRUCTION_SITE } from "../remotables/remotable";
 
 enum Phase {
     MOVE_TO_ENERGY,
@@ -56,8 +56,7 @@ export class BuildJob extends Job {
 
     get energyStore(): RemotableEnergyStore {
         if (this._energyStore === undefined) {
-            // TODO: "type-check" remotables
-            let energyStore = <RemotableEnergyStore | undefined>loadRemotable(this.creep.memory.job.energyStore);
+            let energyStore = <RemotableEnergyStore | undefined>loadRemotable(this.creep.memory.job.energyStore, [REMOTABLE_TYPE_SOURCE, STRUCTURE_CONTAINER, STRUCTURE_STORAGE]);
             if (energyStore === undefined) throw new Error(`Missing remotable energy store for upgrade job ${JSON.stringify(this.creep.memory.job)}`);
             this._energyStore = energyStore;
         }
@@ -71,11 +70,10 @@ export class BuildJob extends Job {
 
     get targets(): PossibleBuildTarget[] {
         if (this._targets === undefined) {
-            // TODO: "type-check" remotables
             this._targets = [];
             for (let i = 0; i < this.creep.memory.job.targets.length; i++) {
                 let target = <IBuildTargetMemory>this.creep.memory.job.targets[i];
-                let site = <RemotableConstructionSite | undefined>loadRemotable(target.savedSite);
+                let site = <RemotableConstructionSite | undefined>loadRemotable(target.savedSite, [REMOTABLE_TYPE_CONSTRUCTION_SITE]);
                 this._targets.push(new PossibleBuildTarget(site, target.myRemainingProgress));
             }
         }

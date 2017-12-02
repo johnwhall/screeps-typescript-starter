@@ -2,6 +2,8 @@ import { LocalStructure } from "./local-structure";
 import { RemotableController } from "../remotables/remotable";
 
 export class LocalController extends LocalStructure<StructureController, STRUCTURE_CONTROLLER> implements RemotableController {
+    readonly type = STRUCTURE_CONTROLLER;
+
     constructor(liveObject: StructureController) {
         super(liveObject);
     }

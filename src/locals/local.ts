@@ -1,6 +1,7 @@
-import { Remotable } from "../remotables/remotable";
+import { Remotable, RemotableType } from "../remotables/remotable";
 
 export abstract class Local<T extends RoomObject> implements Remotable<T> {
+    abstract readonly type: RemotableType;
     readonly liveObject: T;
 
     constructor(liveObject: T) {

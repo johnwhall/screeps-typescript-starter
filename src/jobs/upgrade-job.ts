@@ -1,5 +1,5 @@
 import { Job } from "./job";
-import { load as loadRemotable, isRemotableSource, RemotableEnergyStore, RemotableController } from "../remotables/remotable";
+import { load as loadRemotable, isRemotableSource, RemotableEnergyStore, RemotableController, REMOTABLE_TYPE_SOURCE } from "../remotables/remotable";
 
 enum Phase {
     MOVE_TO_ENERGY,
@@ -32,8 +32,7 @@ export class UpgradeJob extends Job {
 
     get energyStore(): RemotableEnergyStore {
         if (this._energyStore === undefined) {
-            // TODO: "type-check" remotables
-            let energyStore = <RemotableEnergyStore | undefined>loadRemotable(this.creep.memory.job.energyStore);
+            let energyStore = <RemotableEnergyStore | undefined>loadRemotable(this.creep.memory.job.energyStore, [REMOTABLE_TYPE_SOURCE, STRUCTURE_CONTAINER, STRUCTURE_STORAGE]);
             if (energyStore === undefined) throw new Error(`Null remotable energy store for upgrade job ${JSON.stringify(this.creep.memory.job)}`);
             this._energyStore = energyStore;
         }
@@ -47,8 +46,7 @@ export class UpgradeJob extends Job {
 
     get controller(): RemotableController {
         if (this._controller === undefined) {
-            // TODO: "type-check" remotables
-            let controller = <RemotableController | undefined>loadRemotable(this.creep.memory.job.controller);
+            let controller = <RemotableController | undefined>loadRemotable(this.creep.memory.job.controller, [STRUCTURE_CONTROLLER]);
             if (controller === undefined) throw new Error(`Null remotable controller for upgrade job ${JSON.stringify(this.creep.memory.job)}`);
             this._controller = controller;
         }

@@ -4,6 +4,7 @@ import { LocalController } from "../locals/local-controller";
 
 // Controllers are either visible or not mine (in which case, the remote should be deleted), so this is just a wrapper for a LocalController
 export class RemoteController extends RemoteStructure<StructureController, STRUCTURE_CONTROLLER> implements RemotableController {
+    readonly type = STRUCTURE_CONTROLLER;
     readonly structureType: STRUCTURE_CONTROLLER = STRUCTURE_CONTROLLER;
     private _local: LocalController;
 

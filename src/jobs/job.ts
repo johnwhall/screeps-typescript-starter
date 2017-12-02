@@ -42,6 +42,7 @@ export abstract class Job {
 
     protected loadEnergy(energyStore: RemotableEnergyStore, targetAmount: number = this.creep.freeCapacity + this.creep.carry.energy) {
         if (this.creep.carry.energy >= targetAmount) return false;
+        // TODO: consider lookFor or similar instead of findInRange (for performance reasons)
         let droppedEnergy = <Resource<RESOURCE_ENERGY> | undefined>this.creep.pos.findInRange(FIND_DROPPED_RESOURCES, 1, { filter: (r: Resource) => r.resourceType == RESOURCE_ENERGY })[0];
         if (droppedEnergy !== undefined) this.creep.pickup(droppedEnergy);
         else if (energyStore.liveObject instanceof Source) this.creep.harvest(energyStore.liveObject);

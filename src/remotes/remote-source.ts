@@ -1,7 +1,8 @@
 import { Remote } from "./remote";
-import { RemotableSource } from "../remotables/remotable";
+import { RemotableSource, REMOTABLE_TYPE_SOURCE } from "../remotables/remotable";
 
 export class RemoteSource extends Remote<Source> implements RemotableSource {
+    readonly type = REMOTABLE_TYPE_SOURCE;
     covered: boolean = false;
     plannedEnergy: number;
     private _liveObject: Source;

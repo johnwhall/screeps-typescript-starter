@@ -1,8 +1,12 @@
 import { Remote } from "../remotes/remote";
 import { Local } from "../locals/local";
 
-// TODO: add type, or else this is really type-usafe (when loading from memory and in type guards)
+export declare const REMOTABLE_TYPE_SOURCE = "source";
+export declare const REMOTABLE_TYPE_CONSTRUCTION_SITE = "source";
+export declare type RemotableType = "source" | StructureConstant | "constructionSite";
+
 export interface Remotable<T extends RoomObject> {
+    readonly type: RemotableType;
     readonly liveObject: T | undefined;
     readonly pos: RoomPosition;
     readonly room: Room | undefined;
@@ -54,9 +58,12 @@ export function isRemotableSource(remotable: RemotableEnergyStore): remotable is
     return (<RemotableSource>remotable).covered !== undefined;
 }
 
-export function load(obj: any): Remotable<RoomObject> | undefined {
+export function load(obj: any, expectedTypes: RemotableType[]): Remotable<RoomObject> | undefined {
     if (typeof obj != "string") throw new Error(`Cannot load remotable from ${obj}`);
-    if (obj.slice(0, 5) == "flag:") return Remote.load(obj);
-    else if (obj.slice(0, 3) == "id:") return Local.load(obj);
+    if (obj.slice(0, 5) == "flag:") var remotable: Remotable<RoomObject> | undefined = Remote.load(obj);
+    else if (obj.slice(0, 3) == "id:") var remotable: Remotable<RoomObject> | undefined = Local.load(obj);
     else throw new Error(`Cannot load remotable from ${obj}`);
+    if (remotable === undefined) return undefined;
+    if (!_.contains(expectedTypes, remotable.type)) throw new Error(`Incorrect type for remotable ${remotable}. Expected ${expectedTypes}`);
+    return remotable;
 }

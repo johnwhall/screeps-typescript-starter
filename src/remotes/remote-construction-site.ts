@@ -1,9 +1,10 @@
 import { Remote } from "./remote";
-import { RemotableConstructionSite } from "../remotables/remotable";
+import { RemotableConstructionSite, REMOTABLE_TYPE_CONSTRUCTION_SITE } from "../remotables/remotable";
 import { LocalConstructionSite } from "../locals/local-construction-site";
 
 // Construction sites are always visible, so this is just a wrapper for a LocalConstructionSite
 export class RemoteConstructionSite extends Remote<ConstructionSite> implements RemotableConstructionSite {
+    readonly type = REMOTABLE_TYPE_CONSTRUCTION_SITE;
     private _local: LocalConstructionSite;
 
     constructor(flag: Flag) {

@@ -1,7 +1,8 @@
 import { Local } from "./local";
-import { RemotableConstructionSite } from "../remotables/remotable";
+import { RemotableConstructionSite, REMOTABLE_TYPE_CONSTRUCTION_SITE } from "../remotables/remotable";
 
 export class LocalConstructionSite extends Local<ConstructionSite> implements RemotableConstructionSite {
+    readonly type = REMOTABLE_TYPE_CONSTRUCTION_SITE;
     private _plannedProgress: number;
 
     constructor(liveObject: ConstructionSite) {

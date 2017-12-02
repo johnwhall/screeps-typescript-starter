@@ -1,7 +1,8 @@
 import { Local } from "./local";
-import { RemotableStructure } from "../remotables/remotable";
+import { RemotableStructure, RemotableType } from "../remotables/remotable";
 
-export class LocalStructure<S extends Structure, T extends StructureConstant> extends Local<S> implements RemotableStructure<S, T> {
+export abstract class LocalStructure<S extends Structure, T extends StructureConstant> extends Local<S> implements RemotableStructure<S, T> {
+    abstract readonly type: RemotableType;
     plannedHits: number;
 
     constructor(liveObject: S) {

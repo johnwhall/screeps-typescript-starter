@@ -1,7 +1,8 @@
 import { Remote } from "./remote";
-import { RemotableStructure } from "../remotables/remotable";
+import { RemotableStructure, RemotableType } from "../remotables/remotable";
 
 export abstract class RemoteStructure<S extends Structure, T extends StructureConstant> extends Remote<S> implements RemotableStructure<S, T> {
+    abstract readonly type: RemotableType;
     abstract readonly structureType: T;
     plannedHits: number;
 

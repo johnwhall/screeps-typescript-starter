@@ -1,7 +1,8 @@
 import { Local } from "./local";
-import { RemotableSource } from "../remotables/remotable";
+import { RemotableSource, REMOTABLE_TYPE_SOURCE } from "../remotables/remotable";
 
 export class LocalSource extends Local<Source> implements RemotableSource {
+    readonly type = REMOTABLE_TYPE_SOURCE;
     covered: boolean = false;
     plannedEnergy: number;
 

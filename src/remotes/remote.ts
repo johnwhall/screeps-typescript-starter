@@ -1,6 +1,7 @@
-import { Remotable } from "../remotables/remotable";
+import { Remotable, RemotableType } from "../remotables/remotable";
 
 export abstract class Remote<T extends RoomObject> implements Remotable<T> {
+    abstract type: RemotableType;
     abstract liveObject: T | undefined;
     abstract shouldRemove(): boolean;
     abstract toString(): string;

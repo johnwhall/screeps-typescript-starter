@@ -2,6 +2,7 @@ import { RemoteStructure } from "./remote-structure";
 import { RemotableContainer } from "../remotables/remotable";
 
 export class RemoteContainer extends RemoteStructure<StructureContainer, STRUCTURE_CONTAINER> implements RemotableContainer {
+    readonly type = STRUCTURE_CONTAINER;
     readonly structureType: STRUCTURE_CONTAINER = STRUCTURE_CONTAINER;
     plannedEnergy: number;
     private _liveObject: StructureContainer;

@@ -1,5 +1,5 @@
 import { Job } from "./job";
-import { load as loadRemotable, RemotableSource } from "../remotables/remotable";
+import { load as loadRemotable, RemotableSource, REMOTABLE_TYPE_SOURCE } from "../remotables/remotable";
 
 enum Phase {
     MOVE,
@@ -43,8 +43,7 @@ export class StationaryHarvestJob extends Job {
 
     get source(): RemotableSource {
         if (this._source === undefined) {
-            // TODO: "type-check" remotables
-            let source = <RemotableSource | undefined>loadRemotable(this.creep.memory.job.source);
+            let source = <RemotableSource | undefined>loadRemotable(this.creep.memory.job.source, [REMOTABLE_TYPE_SOURCE]);
             if (source === undefined) throw new Error(`Null remotable source for stationary harvest job ${JSON.stringify(this.creep.memory.job)}`);
             this._source = source;
         }
