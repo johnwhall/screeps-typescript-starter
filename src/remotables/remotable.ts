@@ -13,7 +13,7 @@ export interface Remotable<T extends RoomObject> {
     save(): any;
 }
 
-export interface RemotableEnergyStore<T extends Source | StructureContainer = Source | StructureContainer> extends Remotable<T>{
+export interface RemotableEnergyStore<T extends Source | StructureContainer | StructureStorage = Source | StructureContainer | StructureStorage> extends Remotable<T>{
     readonly energy: number;
     readonly energyCapacity: number;
     plannedEnergy: number;
@@ -42,6 +42,11 @@ export interface RemotableContainer extends RemotableStructure<StructureContaine
     storeCapacity: number;
 }
 
+export interface RemotableStorage extends RemotableStructure<StructureStorage, STRUCTURE_STORAGE>, RemotableEnergyStore<StructureStorage> {
+    store: StoreDefinition;
+    storeCapacity: number;
+}
+
 export interface RemotableController extends RemotableStructure<StructureController, STRUCTURE_CONTROLLER> {
     readonly my: boolean;
 }
@@ -52,6 +57,7 @@ declare global {
     interface ConstructionSite { remotable: RemotableConstructionSite; }
     interface StructureContainer { remotable: RemotableContainer; }
     interface StructureController { remotable: RemotableController; }
+    interface StructureStorage { remotable: RemotableStorage; }
 }
 
 export function isRemotableSource(remotable: RemotableEnergyStore): remotable is RemotableSource {

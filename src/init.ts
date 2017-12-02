@@ -7,6 +7,7 @@ import * as LocalSourceModule from "./locals/local-source";
 import * as LocalContainerModule from "./locals/local-container";
 import * as LocalControllerModule from "./locals/local-controller";
 import * as LocalConstructionSiteModule from "./locals/local-construction-site";
+import * as LocalStorageModule from "./locals/local-storage";
 
 export function init() {
     FlagModule.init();
@@ -18,4 +19,5 @@ export function init() {
     LocalContainerModule.init();
     LocalControllerModule.init();
     LocalConstructionSiteModule.init();
+    LocalStorageModule.init();
 }

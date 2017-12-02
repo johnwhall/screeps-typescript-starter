@@ -18,11 +18,12 @@ if (__REVISION__) log.debug(`Revision ID: ${__REVISION__}`);
 
 init();
 
-function findEnergyStore(creep: Creep, room: Room, totalEnergyRequired: number): RemotableEnergyStore {
+function findEnergyStore(creep: Creep, room: Room, totalEnergyRequired: number): RemotableEnergyStore { // TODO: optimize
     let containersAndStorage: RemotableEnergyStore[] = [];
     for (let i = 0; i < room.assignedContainers.length; i++) {
         if (room.assignedContainers[i].plannedEnergy >= totalEnergyRequired - creep.carry.energy) containersAndStorage.push(room.assignedContainers[i]);
     }
+    if (room.storage && room.storage.remotable.plannedEnergy >= totalEnergyRequired - creep.carry.energy) containersAndStorage.push(room.storage.remotable);
     let bestStore = creep.pos.findClosestByPath(containersAndStorage);
     return bestStore || creep.pos.findClosestByPath(room.assignedSources, { filter: { covered: false } });
 }
@@ -45,7 +46,7 @@ function mloop() {
                 room.casteTarget(Caste.STATIONARY_HARVESTER, 1);
                 room.casteTarget(Caste.WORKER, 1);
 
-                _.forEach(room.assignedCreeps, (cs) => _.forEach(cs, (c) => { if (c.job) c.job.update(); }));
+                _.forEach(room.assignedCreeps, (casteCreeps) => _.forEach(casteCreeps, (c) => { if (c.job) c.job.update(); }));
 
                 let roomUncoveredSources = _.filter(room.assignedSources, (s) => !s.covered);
 
