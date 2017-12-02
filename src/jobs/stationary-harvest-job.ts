@@ -3,7 +3,8 @@ import { load as loadRemotable, RemotableSource, REMOTABLE_TYPE_SOURCE, Remotabl
 
 enum Phase {
     MOVE,
-    HARVEST
+    HARVEST,
+    REPAIR_CONTAINER
 }
 
 export class StationaryHarvestJob extends Job {
@@ -28,18 +29,30 @@ export class StationaryHarvestJob extends Job {
     }
 
     run(): boolean {
-        switch (this.creep.memory.job.phase) {
+        switch (this.phase) {
             case Phase.MOVE:
                 if (this.container && this.moveInRangeTo(this.container, 0)) return true;
                 else if (!this.container && this.moveInRangeTo(this.source, 1)) return true;
-                this.creep.memory.job.phase = Phase.HARVEST;
+                this.phase = Phase.HARVEST;
 
             case Phase.HARVEST:
-                this.creep.harvest(<Source>this.source.liveObject);
+                if (this.container && this.container.plannedHits < this.container.hitsMax && this.creep.carry.energy > 0) {
+                    this.phase = Phase.REPAIR_CONTAINER;
+                } else {
+                    this.creep.harvest(<Source>this.source.liveObject);
+                    return true;
+                }
+
+            case Phase.REPAIR_CONTAINER:
+                if (this.container === undefined || this.container.plannedHits >= this.container.hitsMax || this.creep.carry.energy === 0) {
+                    this.phase = Phase.HARVEST;
+                    return this.run();
+                }
+                this.creep.repair(<StructureContainer>this.container.liveObject);
                 return true;
 
             default:
-                throw new Error(`Unknown phase ${this.creep.memory.job.phase} for creep ${this.creep.name}`);
+                throw new Error(`Unknown phase ${this.phase} for creep ${this.creep.name}`);
         }
     }
 
@@ -57,7 +70,7 @@ export class StationaryHarvestJob extends Job {
         this.creep.memory.job.source = source.save();
     }
 
-    get container(): RemotableContainer | undefined{
+    get container(): RemotableContainer | undefined {
         if (this._container === null) this._container = this.source.container;
         return this._container;
     }
