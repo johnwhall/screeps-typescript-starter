@@ -21,6 +21,7 @@ export interface RemotableEnergyStore<T extends Source | StructureContainer | St
 
 export interface RemotableSource extends Remotable<Source>, RemotableEnergyStore<Source> {
     covered: boolean;
+    container: RemotableContainer | undefined;
 }
 
 export interface RemotableConstructionSite extends Remotable<ConstructionSite> {

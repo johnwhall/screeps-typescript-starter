@@ -1,5 +1,5 @@
 import { Remote } from "./remote";
-import { RemotableSource, REMOTABLE_TYPE_SOURCE } from "../remotables/remotable";
+import { RemotableSource, REMOTABLE_TYPE_SOURCE, RemotableContainer } from "../remotables/remotable";
 
 export class RemoteSource extends Remote<Source> implements RemotableSource {
     readonly type = REMOTABLE_TYPE_SOURCE;
@@ -8,6 +8,7 @@ export class RemoteSource extends Remote<Source> implements RemotableSource {
     private _liveObject: Source;
     private _energy: number;
     private _energyCapacity: number;
+    private _container: RemotableContainer | undefined;
 
     get liveObject() : Source|undefined {
         if (this.room == undefined) return undefined;
@@ -22,6 +23,18 @@ export class RemoteSource extends Remote<Source> implements RemotableSource {
     get energyCapacity(): number {
         if (this._energyCapacity === undefined) this._energyCapacity = this.flag.memory.lastKnownEnergyCapacity;
         return this._energyCapacity;
+    }
+
+    get container(): RemotableContainer | undefined { // TODO: consider storing in memory
+        if (this._container === undefined && this.assignedRoom !== undefined) {
+            for (let container of this.assignedRoom.assignedContainers) {
+                if (this.pos.inRangeTo(container, 1)) {
+                    this._container = container;
+                    break;
+                }
+            }
+        }
+        return this._container;
     }
 
     update(): void {

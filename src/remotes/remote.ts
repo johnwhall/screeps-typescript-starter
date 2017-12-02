@@ -18,6 +18,8 @@ export abstract class Remote<T extends RoomObject> implements Remotable<T> {
         return Game.rooms[this.pos.roomName];
     }
 
+    get assignedRoom(): Room | undefined { return this.flag.assignedRoom; }
+
     update(): void { this.associate(); } // TODO: these objects are being recreated every tick anyway; why not just update in the constructor?
 
     associate(): void {

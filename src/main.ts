@@ -44,7 +44,7 @@ function mloop() {
                 if (!room.controller || !room.controller.my) return;
 
                 room.casteTarget(Caste.STATIONARY_HARVESTER, 1);
-                room.casteTarget(Caste.WORKER, 1);
+                room.casteTarget(Caste.WORKER, 0);
 
                 _.forEach(room.assignedCreeps, (casteCreeps) => _.forEach(casteCreeps, (c) => { if (c.job) c.job.update(); }));
 
@@ -64,7 +64,8 @@ function mloop() {
 
                 // BUILDERS
 
-                let energyStores = (<RemotableEnergyStore[]>room.assignedContainers).concat(roomUncoveredSources); // TODO: add storage
+                let energyStores = (<RemotableEnergyStore[]>room.assignedContainers).concat(roomUncoveredSources);
+                if (room.storage) energyStores.push(room.storage.remotable);
                 let buildTargets = _.filter(room.assignedConstructionSites, (cs) => cs.plannedProgress < cs.progressTotal);
                 for (let i = 0; i < unemployedWorkers.length; i++) {
                     let worker = unemployedWorkers[i];

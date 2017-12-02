@@ -97,7 +97,7 @@ export class BuildJob extends Job {
                 // Check if the source was assigned a stationary harvester since our job was assigned; cancel if so
                 if (isRemotableSource(this.energyStore) && this.energyStore.covered) return false;
                 if (this.creep.memory.job.needToLoad === undefined) this.creep.memory.job.needToLoad = this.totalRemainingEnergyRequirement > this.creep.carry.energy;
-                if (this.creep.memory.job.needToLoad && this.moveInRangeTo(this.energyStore)) return true;
+                if (this.creep.memory.job.needToLoad && this.moveInRangeTo(this.energyStore, 1)) return true;
                 this.creep.memory.job.phase = Phase.LOAD;
 
             case Phase.LOAD:

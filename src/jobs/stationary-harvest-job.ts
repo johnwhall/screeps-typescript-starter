@@ -1,5 +1,5 @@
 import { Job } from "./job";
-import { load as loadRemotable, RemotableSource, REMOTABLE_TYPE_SOURCE } from "../remotables/remotable";
+import { load as loadRemotable, RemotableSource, REMOTABLE_TYPE_SOURCE, RemotableContainer } from "../remotables/remotable";
 
 enum Phase {
     MOVE,
@@ -8,6 +8,7 @@ enum Phase {
 
 export class StationaryHarvestJob extends Job {
     private _source: RemotableSource;
+    private _container: RemotableContainer | null | undefined = null;
 
     static newJob(creep: Creep, source: RemotableSource): StationaryHarvestJob {
         try {
@@ -29,7 +30,8 @@ export class StationaryHarvestJob extends Job {
     run(): boolean {
         switch (this.creep.memory.job.phase) {
             case Phase.MOVE:
-                if (this.moveInRangeTo(this.source)) return true;
+                if (this.container && this.moveInRangeTo(this.container, 0)) return true;
+                else if (!this.container && this.moveInRangeTo(this.source, 1)) return true;
                 this.creep.memory.job.phase = Phase.HARVEST;
 
             case Phase.HARVEST:
@@ -53,6 +55,11 @@ export class StationaryHarvestJob extends Job {
     set source(source: RemotableSource) {
         this._source = source;
         this.creep.memory.job.source = source.save();
+    }
+
+    get container(): RemotableContainer | undefined{
+        if (this._container === null) this._container = this.source.container;
+        return this._container;
     }
 
     get phase(): Phase { return this.creep.memory.job.phase; }

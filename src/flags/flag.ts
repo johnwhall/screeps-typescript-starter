@@ -1,5 +1,6 @@
 import { Remote } from "../remotes/remote";
 import { RemoteContainer } from "../remotes/remote-container";
+import { RemoteStorage } from "../remotes/remote-storage";
 import { RemoteSource } from "../remotes/remote-source";
 import { RemoteConstructionSite } from "../remotes/remote-construction-site";
 
@@ -80,6 +81,7 @@ export function init() {
                         case FlagType.FLAG_STRUCTURE:
                             switch (this.structureType) {
                                 case STRUCTURE_CONTAINER: this._remote = new RemoteContainer(this); break;
+                                case STRUCTURE_STORAGE: this._remote = new RemoteStorage(this); break;
                                 default: throw new Error("Remote not yet implemented for flag structure type " + this.structureType + " (flag: " + this.name + ")");
                             }
                             break;

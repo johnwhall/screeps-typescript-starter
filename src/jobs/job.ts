@@ -34,7 +34,7 @@ export abstract class Job {
 
     get name(): string { return this.creep.memory.job.name; }
 
-    protected moveInRangeTo(pos: RoomPosition | { pos: RoomPosition }, range: number = 1) {
+    protected moveInRangeTo(pos: RoomPosition | { pos: RoomPosition }, range: number = 0) {
         if (this.creep.pos.inRangeTo(pos, range)) return false;
         this.creep.moveTo(pos);
         return true;

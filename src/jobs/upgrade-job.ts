@@ -70,7 +70,7 @@ export class UpgradeJob extends Job {
             case Phase.MOVE_TO_ENERGY:
                 // Check if the source was assigned a stationary harvester since our job was assigned; cancel if so
                 if (isRemotableSource(this.energyStore) && this.energyStore.covered) return false;
-                if (this.creep.freeCapacity > 0 && this.moveInRangeTo(this.energyStore)) return true;
+                if (this.creep.freeCapacity > 0 && this.moveInRangeTo(this.energyStore, 1)) return true;
                 this.creep.memory.job.phase = Phase.LOAD;
 
             case Phase.LOAD:
