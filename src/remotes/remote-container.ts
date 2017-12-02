@@ -1,5 +1,5 @@
 import { RemoteStructure } from "./remote-structure";
-import { RemotableContainer } from "../remotables/remotable";
+import { RemotableContainer, RemotableSource } from "../remotables/remotable";
 
 export class RemoteContainer extends RemoteStructure<StructureContainer, STRUCTURE_CONTAINER> implements RemotableContainer {
     readonly type = STRUCTURE_CONTAINER;
@@ -8,6 +8,7 @@ export class RemoteContainer extends RemoteStructure<StructureContainer, STRUCTU
     private _liveObject: StructureContainer;
     private _store: StoreDefinition;
     private _storeCapacity: number;
+    private _source: RemotableSource | undefined;
 
     get liveObject(): StructureContainer | undefined {
         if (this.room == undefined) return undefined;
@@ -26,6 +27,21 @@ export class RemoteContainer extends RemoteStructure<StructureContainer, STRUCTU
 
     get energy(): number { return this.store[RESOURCE_ENERGY]; }
     get energyCapacity(): number { return this.storeCapacity - _.sum(this.store) + this.store[RESOURCE_ENERGY]; } // TODO: consider caching this
+
+    get source(): RemotableSource | undefined { // TODO: consider storing in memory
+        if (this._source === undefined && this.assignedRoom !== undefined) {
+            for (let source of this.assignedRoom.assignedSources) {
+                if (this.pos.inRangeTo(source, 1)) {
+                    this._source = source;
+                    source.container = this;
+                    break;
+                }
+            }
+        }
+        return this._source;
+    }
+
+    set source(source: RemotableSource | undefined) { this._source = source; }
 
     update(): void {
         super.update();

@@ -37,6 +37,8 @@ export class RemoteSource extends Remote<Source> implements RemotableSource {
         return this._container;
     }
 
+    set container(container: RemotableContainer | undefined) { this._container = container; }
+
     update(): void {
         super.update();
         if (this.liveObject !== undefined) {

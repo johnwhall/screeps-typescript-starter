@@ -48,23 +48,24 @@ function mloop() {
                 employStationaryHarvesters(unemployedStationaryHarvesters, roomUncoveredSources);
 
                 // HAULERS
-                // TODO: optimize
-                let energySinks = (<(RemotableContainer | RemotableStorage)[]>room.assignedContainers.filter((c) => !_.contains(_.pluck(room.assignedSources, "container"), c)));
-                if (room.storage) energySinks.push(room.storage.remotable);
-                let energySources = (<RemotableEnergyStore[]>room.assignedContainers).concat(roomUncoveredSources).filter((es) => !_.contains(energySinks, es));
-                let haulTargets = _.filter(energySinks, (es) => es.plannedEnergy < es.energyCapacity);
-                employHaulers(unemployedHaulers, energySources, haulTargets);
+                let sourceContainers: RemotableContainer[] = [];
+                for (let container of room.assignedContainers) if (container.source !== undefined) sourceContainers.push(container);
+                let haulTargets: (RemotableContainer | RemotableStorage)[] = [];
+                for (let container of room.assignedContainers) if (container.source === undefined) haulTargets.push(container);
+                if (room.storage !== undefined) haulTargets.push(room.storage.remotable);
+                haulTargets = haulTargets.filter((ht) => ht.plannedEnergy < ht.energyCapacity);
+                employHaulers(unemployedHaulers, sourceContainers, haulTargets);
+
+                let workerEnergyStores: RemotableEnergyStore[] = _.clone(roomUncoveredSources);
+                for (let container of room.assignedContainers) if (container.source === undefined) workerEnergyStores.push(container);
+                if (room.storage !== undefined) workerEnergyStores.push(room.storage.remotable);
 
                 // BUILDERS
-                let energyStores = (<RemotableEnergyStore[]>room.assignedContainers).concat(roomUncoveredSources);
-                if (room.storage) energyStores.push(room.storage.remotable);
                 let buildTargets = _.filter(room.assignedConstructionSites, (cs) => cs.plannedProgress < cs.progressTotal);
-                employBuilders(room, unemployedWorkers, energyStores, buildTargets);
+                employBuilders(room, unemployedWorkers, workerEnergyStores, buildTargets);
 
                 // UPGRADERS
-                employUpgraders(room, unemployedWorkers, energyStores);
-
-                if (unemployedWorkers.length > 0) console.log("unemployedWorkers at end of tick: " + unemployedWorkers);
+                employUpgraders(room, unemployedWorkers, workerEnergyStores);
 
                 room.queueFromTargets();
                 room.spawnFromQueue();

@@ -41,6 +41,7 @@ export interface RemotableStructure<S extends Structure, T extends StructureCons
 export interface RemotableContainer extends RemotableStructure<StructureContainer, STRUCTURE_CONTAINER>, RemotableEnergyStore<StructureContainer> {
     store: StoreDefinition;
     storeCapacity: number;
+    source: RemotableSource | undefined;
 }
 
 export interface RemotableStorage extends RemotableStructure<StructureStorage, STRUCTURE_STORAGE>, RemotableEnergyStore<StructureStorage> {

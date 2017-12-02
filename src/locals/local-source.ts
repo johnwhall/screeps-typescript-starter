@@ -26,6 +26,8 @@ export class LocalSource extends Local<Source> implements RemotableSource {
         }
         return this._container;
     }
+
+    set container(container: RemotableContainer | undefined) { this._container = container; }
 }
 
 export function init() {
