@@ -48,7 +48,7 @@ export class UpgradeJob extends Job {
     get controller(): RemotableController {
         if (this._controller === undefined) {
             let controller = <RemotableController | undefined>loadRemotable(this.creep.memory.job.controller, [STRUCTURE_CONTROLLER]);
-            if (controller === undefined) throw new Error(`Null remotable controller for upgrade job ${JSON.stringify(this.creep.memory.job)}`);
+            if (controller === undefined) throw new Error(`Null remotable controller for ${this.name} job ${JSON.stringify(this.creep.memory.job)}`);
             this._controller = controller;
         }
         return this._controller;

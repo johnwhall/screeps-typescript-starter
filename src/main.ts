@@ -9,7 +9,8 @@ import { UpgradeJob } from "./jobs/upgrade-job";
 
 import { init } from "./init";
 import { BuildJob, BuildTarget } from "./jobs/build-job";
-import { RemotableEnergyStore } from "remotables/remotable";
+import { RemotableEnergyStore, RemotableContainer, RemotableStorage } from "remotables/remotable";
+import { HaulTarget, HaulJob } from "./jobs/haul-job";
 
 if (Config.USE_PROFILER) Profiler.enable();
 
@@ -44,7 +45,8 @@ function mloop() {
                 if (!room.controller || !room.controller.my) return;
 
                 room.casteTarget(Caste.STATIONARY_HARVESTER, 1);
-                room.casteTarget(Caste.WORKER, 0);
+                room.casteTarget(Caste.WORKER, 1);
+                room.casteTarget(Caste.HAULER, 1);
 
                 _.forEach(room.assignedCreeps, (casteCreeps) => _.forEach(casteCreeps, (c) => { if (c.job) c.job.update(); }));
 
@@ -60,7 +62,51 @@ function mloop() {
                     c.job.update();
                 });
 
+                let unemployedHaulers = _.filter(room.assignedCreeps[Caste.HAULER], (c: Creep) => !c.job);
                 let unemployedWorkers = _.filter(room.assignedCreeps[Caste.WORKER], (c: Creep) => !c.job);
+
+                // HAULERS
+
+                // TODO: optimize
+                let energySinks = (<(RemotableContainer | RemotableStorage)[]>room.assignedContainers.filter((c) => !_.contains(_.pluck(room.assignedSources, "container"), c)));
+                if (room.storage) energySinks.push(room.storage.remotable);
+                let energySources = (<RemotableEnergyStore[]>room.assignedContainers).concat(roomUncoveredSources).filter((es) => !_.contains(energySinks, es));
+
+                // console.log("energySources: " + energySources);
+                // console.log("energySinks: " + energySinks);
+
+                let haulTargets = _.filter(energySinks, (es) => es.plannedEnergy < es.energyCapacity);
+                for (let i = 0; i < unemployedHaulers.length; i++) {
+                    let hauler = unemployedHaulers[i];
+                    let targets = [];
+                    let maxAvailableEnergyStore = _.max(energySources, (es) => es.plannedEnergy);
+                    let capacity = Math.min(maxAvailableEnergyStore.plannedEnergy, hauler.freeCapacity) + hauler.carry.energy;
+                    if (capacity === 0) continue;
+                    let searchOrigin = hauler.pos;
+                    let totalEnergyRequired = 0;
+
+                    while (capacity > 0 && haulTargets.length > 0) {
+                        let target = searchOrigin.findClosestByPath([haulTargets[0]]);
+                        if (!target) break;
+                        let energyRequired = Math.min(target.energyCapacity - target.plannedEnergy, capacity);
+                        targets.push(new HaulTarget(target, energyRequired));
+                        capacity -= energyRequired;
+                        totalEnergyRequired += energyRequired;
+                        if (target.plannedEnergy  + energyRequired >= target.energyCapacity) {
+                            haulTargets.splice(0, 1);
+                        }
+                        searchOrigin = target.pos;
+                    }
+
+                    if (targets.length > 0) {
+                        let energyStore = hauler.pos.findClosestByPath(energySources, { filter: (es: RemotableEnergyStore) => es.energy >= totalEnergyRequired - hauler.carry.energy });
+                        if (!energyStore) continue;
+                        console.log(`Ordering ${hauler.name} to pick up ${totalEnergyRequired} from ${energyStore} and deliver to ${targets}`);
+                        hauler.job = HaulJob.newJob(hauler, energyStore, targets);
+                        hauler.job.update();
+                        unemployedHaulers.splice(i--, 1);
+                    }
+                }
 
                 // BUILDERS
 

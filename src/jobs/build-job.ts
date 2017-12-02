@@ -57,7 +57,7 @@ export class BuildJob extends Job {
     get energyStore(): RemotableEnergyStore {
         if (this._energyStore === undefined) {
             let energyStore = <RemotableEnergyStore | undefined>loadRemotable(this.creep.memory.job.energyStore, [REMOTABLE_TYPE_SOURCE, STRUCTURE_CONTAINER, STRUCTURE_STORAGE]);
-            if (energyStore === undefined) throw new Error(`Missing remotable energy store for upgrade job ${JSON.stringify(this.creep.memory.job)}`);
+            if (energyStore === undefined) throw new Error(`Missing remotable energy store for ${this.name} job ${JSON.stringify(this.creep.memory.job)}`);
             this._energyStore = energyStore;
         }
         return this._energyStore;
