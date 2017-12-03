@@ -39,7 +39,7 @@ function mloop() {
                 if (!room.controller || !room.controller.my) return;
 
                 room.casteTarget(Caste.STATIONARY_HARVESTER, 1);
-                room.casteTarget(Caste.WORKER, 0);
+                room.casteTarget(Caste.WORKER, 2);
                 room.casteTarget(Caste.HAULER, 1);
 
                 _.forEach(room.assignedCreeps, (casteCreeps) => _.forEach(casteCreeps, (c) => { if (c.job) c.job.update(); }));

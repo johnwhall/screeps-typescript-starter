@@ -139,4 +139,15 @@ export function init() {
             return Math.min(energy / REPAIR_COST, power);
         }
     }
+
+    if ((<any>Creep.prototype)._moveTo == undefined) {
+        (<any>Creep.prototype)._moveTo = Creep.prototype.moveTo;
+        Creep.prototype.moveTo = function() {
+            if (_.isNumber(arguments[0]) && arguments[1] == undefined) return (<any>this)._moveTo.apply(this, arguments);
+            if (_.isNumber(arguments[0])) var opts = (arguments[2] == undefined ? (arguments[2] = {}) : arguments[2]);
+            else var opts = (arguments[1] == undefined ? (arguments[1] = {}) : arguments[1]);
+            if (opts.visualizePathStyle == undefined) opts.visualizePathStyle = { stroke: '#00ff00', opacity: 0.25 };
+            return (<any>this)._moveTo(arguments[0], arguments[1], arguments[2]);
+        }
+    }
 }
