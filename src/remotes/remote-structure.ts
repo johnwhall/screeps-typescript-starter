@@ -20,7 +20,7 @@ export abstract class RemoteStructure<S extends Structure, T extends StructureCo
     }
 
     update(): void {
-        this.update();
+        super.update();
         if (this.liveObject !== undefined) {
             this.flag.memory.lastKnownHits = this.liveObject.hits;
             this.flag.memory.lastKnownHitsMax = this.liveObject.hitsMax;

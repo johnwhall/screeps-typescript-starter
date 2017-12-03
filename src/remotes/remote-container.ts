@@ -12,8 +12,8 @@ export class RemoteContainer extends RemoteStructure<StructureContainer, STRUCTU
     private _source: RemotableSource | undefined;
 
     get liveObject(): StructureContainer | undefined {
-        if (this.room == undefined) return undefined;
-        else return this._liveObject = <StructureContainer>this.pos.lookFor(LOOK_STRUCTURES).filter((s: RoomObject) => (<Structure>s).structureType == STRUCTURE_CONTAINER)[0]; // TODO: this does not cache... it calls lookFor every time!
+        if (this._liveObject === undefined && this.room !== undefined) this._liveObject = <StructureContainer>this.pos.lookFor(LOOK_STRUCTURES).filter((s: RoomObject) => (<Structure>s).structureType == STRUCTURE_CONTAINER)[0];
+        return this._liveObject;
     }
 
     get store(): StoreDefinition {
