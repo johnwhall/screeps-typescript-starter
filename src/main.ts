@@ -9,6 +9,8 @@ import { employUpgraders } from "./planning/upgraders";
 import { employStationaryHarvesters } from "./planning/stationary-harvesters";
 import { employHaulers } from "./planning/haulers";
 import { employBuilders } from "./planning/builders";
+import { updateVisuals } from "./visuals";
+import { updateTickRate } from "./utils";
 
 if (Config.USE_PROFILER) Profiler.enable();
 
@@ -19,6 +21,8 @@ init();
 
 function mloop() {
     try {
+        updateTickRate();
+
         // TODO: do this for rooms and spawns also?
         for (let name in Memory.creeps) if (!Game.creeps[name]) { console.log('Clearing non-existing creep memory:', name); delete Memory.creeps[name]; }
         for (let name in Memory.flags) if (!Game.flags[name]) { console.log('Clearing non-existing flag memory:', name); delete Memory.flags[name]; }
@@ -32,9 +36,9 @@ function mloop() {
             try {
                 if (!room.controller || !room.controller.my) return;
 
-                room.casteTarget(Caste.STATIONARY_HARVESTER, 1);
-                room.casteTarget(Caste.WORKER, 2);
-                room.casteTarget(Caste.HAULER, 1);
+                room.casteTarget(Caste.STATIONARY_HARVESTER, 2);
+                room.casteTarget(Caste.WORKER, 4);
+                room.casteTarget(Caste.HAULER, 2);
 
                 _.forEach(room.assignedCreeps, (casteCreeps) => _.forEach(casteCreeps, (c) => { if (c.job) c.job.update(); }));
 
@@ -49,14 +53,13 @@ function mloop() {
 
                 let sourceContainers: RemotableContainer[] = [];
                 for (let container of room.assignedContainers) if (container.source !== undefined) sourceContainers.push(container);
-                let workerEnergyStores: RemotableEnergyStore[] = _.clone(roomUncoveredSources);
-                for (let container of room.assignedContainers) if (container.source === undefined) workerEnergyStores.push(container);
+                let workerEnergyStores = (<RemotableEnergyStore[]>roomUncoveredSources).concat(room.assignedContainers);
                 if (room.storage !== undefined) workerEnergyStores.push(room.storage.remotable);
 
                 // FILLERS
                 let fillerCreeps = room.assignedCreeps[Caste.HAULER].length === 0 ? unemployedWorkers : unemployedHaulers;
                 let fillTargets = _.filter((<(RemotableSpawn | RemotableExtension)[]>room.spawns).concat(room.extensions), (t) => t.plannedEnergy < t.energyCapacity);
-                let fillEnergyStores = workerEnergyStores.concat(sourceContainers);
+                let fillEnergyStores = workerEnergyStores;
                 if (fillerCreeps === unemployedHaulers) fillEnergyStores = fillEnergyStores.filter((es) => es.type !== REMOTABLE_TYPE_SOURCE);
                 employHaulers(fillerCreeps, fillEnergyStores, fillTargets);
 
@@ -84,19 +87,7 @@ function mloop() {
         // _.forEach(Game.creeps, (c) => { if (c.caste !== Caste.STATIONARY_HARVESTER) c.doJob() });
         _.forEach(Game.creeps, (c) => c.doJob() );
 
-        _.forEach(Game.constructionSites, (cs) => {
-            let plannedProgressStr = cs.remotable.plannedProgress === cs.progress ? "" : ` (${cs.remotable.plannedProgress})`;
-            new RoomVisual(cs.pos.roomName).text(`${cs.progress}${plannedProgressStr} / ${cs.progressTotal}`, cs.pos.x, cs.pos.y + 0.6, { font: 0.35 });
-        });
-
-        _.forEach(Game.rooms, (room) => {
-            if (!room.controller || !room.controller.my) return;
-
-            for (let cont of room.assignedContainers) {
-                let plannedEnergyStr = cont.plannedEnergy === cont.energy ? "" : ` (${cont.plannedEnergy})`;
-                room.visual.text(`${cont.energy}${plannedEnergyStr} / ${cont.energyCapacity}`, cont.pos.x, cont.pos.y + 0.6, { font: 0.35 });
-            }
-        });
+        updateVisuals();
     } catch (e) {
         log.logException(e);
     }

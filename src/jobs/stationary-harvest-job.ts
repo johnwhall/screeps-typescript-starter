@@ -78,7 +78,7 @@ export class StationaryHarvestJob extends Job {
     get phase(): Phase { return this.creep.memory.job.phase; }
     set phase(phase: Phase) { this.creep.memory.job.phase = phase; }
 
-    update(): void { this.source.covered = true; }
+    update(): void { if (this.creep.getActiveBodyparts(WORK) >= 5) this.source.covered = true; } // TODO: account for boosts, different source energyCapacities
 
     static load(creep: Creep): StationaryHarvestJob {
         return new StationaryHarvestJob(creep);

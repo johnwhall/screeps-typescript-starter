@@ -31,3 +31,11 @@ export function findEnergyStore(creep: Creep, room: Room, totalEnergyRequired: n
     let bestStore = creep.pos.findClosestByPath(containersAndStorage);
     return bestStore || creep.pos.findClosestByPath(room.assignedSources, { filter: { covered: false } });
 }
+
+export function updateTickRate() {
+    var curTickTime = new Date().getTime();
+    if (!Memory.lastTickTime) { Memory.lastTickTime = curTickTime; Memory.avgTickRate = 0; }
+    var thisTickRate = (curTickTime - Memory.lastTickTime) / 1000;
+    Memory.avgTickRate = Memory.avgTickRate - Memory.avgTickRate / 100 + thisTickRate / 100;
+    Memory.lastTickTime = curTickTime;
+}

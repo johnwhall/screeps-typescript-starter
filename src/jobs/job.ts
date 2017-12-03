@@ -47,7 +47,7 @@ export abstract class Job {
         if (droppedEnergy !== undefined) this.creep.pickup(droppedEnergy);
 
         // If someone beat us to droppedEnergy, loadEnergy will be called again next tick, and we'll harvest again or withdraw an adjusted amount
-        let remainingAmount = targetAmount - this.creep.carry.energy - (droppedEnergy === undefined ? 0 :droppedEnergy.amount);
+        let remainingAmount = targetAmount - this.creep.carry.energy - (droppedEnergy === undefined ? 0 : droppedEnergy.amount);
         if (energyStore.liveObject instanceof Source) this.creep.harvest(energyStore.liveObject);
         else this.creep.withdraw(<Structure>energyStore.liveObject, RESOURCE_ENERGY, remainingAmount);
 

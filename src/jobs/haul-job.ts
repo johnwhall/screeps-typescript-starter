@@ -109,7 +109,8 @@ export class HaulJob extends Job {
                 if (target.site.liveObject === undefined) throw new Error(`Missing site liveObject for target ${target}`);
                 this.creep.transfer(target.site.liveObject, RESOURCE_ENERGY, Math.min(target.site.energyCapacity - target.site.energy, this.creep.carry.energy, target.remainingTransferAmount));
                 this.phase = Phase.MOVE_TO_TARGET;
-                return this.targetFinished();
+                if(this.targetFinished()) return this.run();
+                else return false;
 
             default:
                 throw new Error(`Unknown phase ${this.creep.memory.job.phase} for creep ${this.creep.name}`);
@@ -137,6 +138,7 @@ export class HaulJob extends Job {
 
     update(): void {
         if (this.phase <= Phase.LOAD) this.energyStore.plannedEnergy -= (this.totalRemainingEnergyRequirement - this.creep.carry.energy);
+        // TODO: update plannedEnergy (and maybe separate plannedEnergy into incoming and outgoing)
     }
 
     static load(creep: Creep): HaulJob {

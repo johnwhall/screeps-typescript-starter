@@ -102,7 +102,7 @@ export class BuildJob extends Job {
 
             case Phase.LOAD:
                 if (this.loadEnergy(this.energyStore, this.totalRemainingEnergyRequirement)) return true;
-                this.targets = this.selectNextTarget(this.removeFinishedTargets(this.targets));
+                this.targets = this.removeFinishedTargets(this.targets);
                 if (this.targets.length == 0) return false;
                 this.creep.memory.job.phase = Phase.MOVE_TO_CONSTRUCTION_SITE;
 
@@ -130,7 +130,7 @@ export class BuildJob extends Job {
     }
 
     private targetFinished(): boolean {
-        this.targets = this.selectNextTarget(this.removeFinishedTargets(this.targets.slice(1)));
+        this.targets = this.removeFinishedTargets(this.targets.slice(1));
         return this.targets.length !== 0;
     }
 
