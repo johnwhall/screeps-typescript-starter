@@ -1,5 +1,5 @@
 import { Job, JobTarget } from "./job";
-import { load as loadRemotable, isRemotableSource, RemotableEnergyStore, REMOTABLE_TYPE_SOURCE, RemotableContainer, RemotableStorage } from "../remotables/remotable";
+import { load as loadRemotable, isRemotableSource, RemotableEnergyStore, REMOTABLE_TYPE_SOURCE, RemotableContainer, RemotableStorage, RemotableSpawn } from "../remotables/remotable";
 
 enum Phase {
     MOVE_TO_ENERGY,
@@ -8,8 +8,8 @@ enum Phase {
     UNLOAD
 }
 
-export class HaulTarget extends JobTarget<StructureContainer | StructureStorage, RemotableContainer | RemotableStorage> { // TODO: add extensions
-    constructor(site: RemotableContainer | RemotableStorage, public remainingTransferAmount: number) { super(site); }
+export class HaulTarget extends JobTarget<StructureContainer | StructureStorage | StructureSpawn, RemotableContainer | RemotableStorage | RemotableSpawn> { // TODO: add extensions
+    constructor(site: RemotableContainer | RemotableStorage | RemotableSpawn, public remainingTransferAmount: number) { super(site); }
     save(): any { return { site: this.site.save(), remainingTransferAmount: this.remainingTransferAmount } }
     toString(): string { return `${this.site.toString()} (${this.remainingTransferAmount})` }
 }
@@ -65,7 +65,7 @@ export class HaulJob extends Job {
             this._targets = [];
             for (let i = 0; i < this.creep.memory.job.targets.length; i++) {
                 let target = <IHaulTargetMemory>this.creep.memory.job.targets[i];
-                let site = <RemotableContainer | RemotableStorage | undefined>loadRemotable(target.savedSite, [STRUCTURE_CONTAINER, STRUCTURE_STORAGE]); // TODO: add extensions
+                let site = <RemotableContainer | RemotableStorage | RemotableSpawn | undefined>loadRemotable(target.savedSite, [STRUCTURE_CONTAINER, STRUCTURE_STORAGE, STRUCTURE_SPAWN]); // TODO: add extensions
                 if (site === undefined) throw new Error(`Missing site for ${JSON.stringify(target)}`);
                 this._targets.push(new HaulTarget(site, target.remainingTransferAmount));
             }
@@ -107,7 +107,7 @@ export class HaulJob extends Job {
             case Phase.UNLOAD:
                 let target = this.targets[0];
                 if (target.site.liveObject === undefined) throw new Error(`Missing site liveObject for target ${target}`);
-                this.creep.transfer(target.site.liveObject, RESOURCE_ENERGY, Math.min(this.creep.carry.energy, target.remainingTransferAmount));
+                this.creep.transfer(target.site.liveObject, RESOURCE_ENERGY, Math.min(target.site.energyCapacity - target.site.energy, this.creep.carry.energy, target.remainingTransferAmount));
                 this.phase = Phase.MOVE_TO_TARGET;
                 return this.targetFinished();
 

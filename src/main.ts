@@ -4,7 +4,7 @@ import { log } from "./lib/logger/log";
 
 import { init } from "./init";
 import { Caste } from "./caste";
-import { RemotableEnergyStore, RemotableContainer, RemotableStorage } from "remotables/remotable";
+import { RemotableEnergyStore, RemotableContainer, RemotableStorage, RemotableSpawn } from "remotables/remotable";
 import { employUpgraders } from "./planning/upgraders";
 import { employStationaryHarvesters } from "./planning/stationary-harvesters";
 import { employHaulers } from "./planning/haulers";
@@ -47,6 +47,15 @@ function mloop() {
                 // STATIONARY HARVESTERS
                 employStationaryHarvesters(unemployedStationaryHarvesters, roomUncoveredSources);
 
+                let workerEnergyStores: RemotableEnergyStore[] = _.clone(roomUncoveredSources);
+                for (let container of room.assignedContainers) if (container.source === undefined) workerEnergyStores.push(container);
+                if (room.storage !== undefined) workerEnergyStores.push(room.storage.remotable);
+
+                // FILLERS
+                let fillerCreeps = room.assignedCreeps[Caste.HAULER].length === 0 ? unemployedWorkers : unemployedHaulers;
+                let fillTargets: (RemotableSpawn)[] = _.filter(room.spawns, (t) => t.plannedEnergy < t.energyCapacity);
+                employHaulers(fillerCreeps, workerEnergyStores, fillTargets);
+
                 // HAULERS
                 let sourceContainers: RemotableContainer[] = [];
                 for (let container of room.assignedContainers) if (container.source !== undefined) sourceContainers.push(container);
@@ -55,10 +64,6 @@ function mloop() {
                 if (room.storage !== undefined) haulTargets.push(room.storage.remotable);
                 haulTargets = haulTargets.filter((ht) => ht.plannedEnergy < ht.energyCapacity);
                 employHaulers(unemployedHaulers, sourceContainers, haulTargets);
-
-                let workerEnergyStores: RemotableEnergyStore[] = _.clone(roomUncoveredSources);
-                for (let container of room.assignedContainers) if (container.source === undefined) workerEnergyStores.push(container);
-                if (room.storage !== undefined) workerEnergyStores.push(room.storage.remotable);
 
                 // BUILDERS
                 let buildTargets = _.filter(room.assignedConstructionSites, (cs) => cs.plannedProgress < cs.progressTotal);

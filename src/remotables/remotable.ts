@@ -13,7 +13,9 @@ export interface Remotable<T extends RoomObject> {
     save(): any;
 }
 
-export interface RemotableEnergyStore<T extends Source | StructureContainer | StructureStorage = Source | StructureContainer | StructureStorage> extends Remotable<T>{
+declare type RemotableEnergyStoreTypes = Source | StructureContainer | StructureStorage | StructureSpawn;
+
+export interface RemotableEnergyStore<T extends RemotableEnergyStoreTypes = RemotableEnergyStoreTypes> extends Remotable<T>{
     readonly energy: number;
     readonly energyCapacity: number;
     plannedEnergy: number;
@@ -44,6 +46,8 @@ export interface RemotableContainer extends RemotableStructure<StructureContaine
     source: RemotableSource | undefined;
 }
 
+export interface RemotableSpawn extends RemotableStructure<StructureSpawn, STRUCTURE_SPAWN>, RemotableEnergyStore<StructureSpawn> {}
+
 export interface RemotableStorage extends RemotableStructure<StructureStorage, STRUCTURE_STORAGE>, RemotableEnergyStore<StructureStorage> {
     store: StoreDefinition;
     storeCapacity: number;
@@ -60,10 +64,11 @@ declare global {
     interface StructureContainer { remotable: RemotableContainer; }
     interface StructureController { remotable: RemotableController; }
     interface StructureStorage { remotable: RemotableStorage; }
+    interface StructureSpawn { remotable: RemotableSpawn; }
 }
 
 export function isRemotableSource(remotable: RemotableEnergyStore): remotable is RemotableSource {
-    return (<RemotableSource>remotable).covered !== undefined;
+    return (<RemotableSource>remotable).covered !== undefined; // TODO: use type member
 }
 
 export function load(obj: any, expectedTypes: RemotableType[]): Remotable<RoomObject> | undefined {

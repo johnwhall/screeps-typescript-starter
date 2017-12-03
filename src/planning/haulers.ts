@@ -1,7 +1,7 @@
-import { RemotableEnergyStore, RemotableContainer, RemotableStorage } from "../remotables/remotable";
+import { RemotableEnergyStore, RemotableContainer, RemotableStorage, RemotableSpawn } from "../remotables/remotable";
 import { HaulTarget, HaulJob } from "../jobs/haul-job";
 
-export function employHaulers(unemployedHaulers: Creep[], energyStores: RemotableEnergyStore[], haulTargets: (RemotableContainer | RemotableStorage)[]) {
+export function employHaulers(unemployedHaulers: Creep[], energyStores: RemotableEnergyStore[], haulTargets: (RemotableContainer | RemotableStorage | RemotableSpawn)[]) {
     for (let i = 0; i < unemployedHaulers.length; i++) {
         let hauler = unemployedHaulers[i];
         let targets = [];

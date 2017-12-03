@@ -1,6 +1,6 @@
 import { SpawnQueueItem } from "./spawn-queue-item";
 import { Caste, selectParts } from "./caste";
-import { RemotableSource, RemotableContainer, RemotableConstructionSite } from "./remotables/remotable";
+import { RemotableSource, RemotableContainer, RemotableConstructionSite, RemotableSpawn } from "./remotables/remotable";
 import { FlagType } from "./flags/flag";
 import { nextUuid } from "./utils";
 
@@ -12,6 +12,7 @@ declare global {
         readonly assignedSources: RemotableSource[];
         readonly assignedContainers: RemotableContainer[];
         readonly assignedConstructionSites: RemotableConstructionSite[];
+        readonly spawns: RemotableSpawn[];
         spawnQueue: SpawnQueueItem[];
         assignedFlagRemoved(flag: Flag): void;
         casteTarget(caste: Caste, newTarget?: number): number;
@@ -104,6 +105,18 @@ export function init() {
                 }
                 return this._assignedConstructionSites;
             },
+        });
+    }
+
+    if (!Room.prototype.spawns) {
+        Object.defineProperty(Room.prototype, "spawns", {
+            get: function() {
+                if (this._spawns === undefined) {
+                    this._spawns = [];
+                    _.forEach(Game.spawns, (s) => { if (s.room === this) this._spawns.push(s.remotable); })
+                }
+                return this._spawns;
+            }
         });
     }
 
