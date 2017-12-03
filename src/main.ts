@@ -11,6 +11,7 @@ import { employHaulers } from "./planning/haulers";
 import { employBuilders } from "./planning/builders";
 import { updateVisuals } from "./visuals";
 import { updateTickRate } from "./utils";
+import { employRepairers } from "./planning/repairers";
 
 if (Config.USE_PROFILER) Profiler.enable();
 
@@ -36,9 +37,9 @@ function mloop() {
             try {
                 if (!room.controller || !room.controller.my) return;
 
-                room.casteTarget(Caste.STATIONARY_HARVESTER, 2);
-                room.casteTarget(Caste.WORKER, 4);
-                room.casteTarget(Caste.HAULER, 2);
+                room.casteTarget(Caste.STATIONARY_HARVESTER, 0);
+                room.casteTarget(Caste.WORKER, 2);
+                room.casteTarget(Caste.HAULER, 0);
 
                 _.forEach(room.assignedCreeps, (casteCreeps) => _.forEach(casteCreeps, (c) => { if (c.job) c.job.update(); }));
 
@@ -70,14 +71,16 @@ function mloop() {
                 haulTargets = haulTargets.filter((ht) => ht.plannedEnergyWithIncoming < ht.energyCapacity);
                 employHaulers(unemployedHaulers, sourceContainers, haulTargets);
 
+                // REPAIRERS
+                let repairTargets = _.filter(room.assignedStructures, (cs) => cs.plannedHits < 0.95 * cs.hitsMax);
+                employRepairers(room, unemployedWorkers, workerEnergyStores, repairTargets);
+
                 // BUILDERS
                 let buildTargets = _.filter(room.assignedConstructionSites, (cs) => cs.plannedProgress < cs.progressTotal);
                 employBuilders(room, unemployedWorkers, workerEnergyStores, buildTargets);
 
                 // UPGRADERS
                 employUpgraders(room, unemployedWorkers, workerEnergyStores);
-
-                // _.forEach((<any>room.assignedSources).concat(room.assignedContainers, (<any>room.storage).remotable), (es) => console.log(es + ": plannedEnergyWithIncoming: " + es.plannedEnergyWithIncoming + " availableEnergyForPickup: " + es.availableEnergyForPickup));
 
                 room.queueFromTargets();
                 room.spawnFromQueue();

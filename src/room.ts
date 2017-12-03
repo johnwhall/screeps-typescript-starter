@@ -1,6 +1,6 @@
 import { SpawnQueueItem } from "./spawn-queue-item";
 import { Caste, selectParts } from "./caste";
-import { RemotableSource, RemotableContainer, RemotableConstructionSite, RemotableSpawn, RemotableExtension } from "./remotables/remotable";
+import { RemotableSource, RemotableContainer, RemotableConstructionSite, RemotableSpawn, RemotableExtension, RemotableStructure } from "./remotables/remotable";
 import { FlagType } from "./flags/flag";
 import { nextUuid } from "./utils";
 
@@ -14,6 +14,7 @@ declare global {
         readonly assignedConstructionSites: RemotableConstructionSite[];
         readonly spawns: RemotableSpawn[];
         readonly extensions: RemotableExtension[];
+        readonly assignedStructures: RemotableStructure[];
         spawnQueue: SpawnQueueItem[];
         assignedFlagRemoved(flag: Flag): void;
         casteTarget(caste: Caste, newTarget?: number): number;
@@ -125,9 +126,23 @@ export function init() {
         Object.defineProperty(Room.prototype, "extensions", {
             get: function() {
                 if (this._extensions === undefined) {
-                    this._extensions = _.pluck(this.find(FIND_STRUCTURES, { filter: (s: Structure) => s.structureType === STRUCTURE_EXTENSION }), "remotable");
+                    this._extensions = _.pluck(this.find(FIND_MY_STRUCTURES, { filter: (s: Structure) => s.structureType === STRUCTURE_EXTENSION }), "remotable");
                 }
                 return this._extensions;
+            }
+        });
+    }
+
+    if (!Room.prototype.assignedStructures) {
+        Object.defineProperty(Room.prototype, "assignedStructures", {
+            get: function() {
+                if (this._assignedStructures === undefined) {
+                    const implementedTypes = [ STRUCTURE_CONTAINER, STRUCTURE_CONTROLLER, STRUCTURE_EXTENSION, STRUCTURE_SPAWN, STRUCTURE_STORAGE ];
+                    let roomStructures = _.pluck(this.find(FIND_STRUCTURES, { filter: (s: Structure) => _.contains(implementedTypes, s.structureType) }), "remotable");
+                    let flagStructures = _.pluck(this.assignedFlags.filter((f: Flag) => f.type === FlagType.FLAG_STRUCTURE && _.contains(implementedTypes, f.structureType)), "remote");
+                    this._assignedStructures = _.unique(roomStructures.concat(flagStructures));
+                }
+                return this._assignedStructures;
             }
         });
     }

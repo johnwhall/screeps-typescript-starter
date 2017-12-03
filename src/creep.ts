@@ -12,6 +12,8 @@ declare global {
         doJob(): void;
         buildPower(energy: number): number;
         buildPowerMax: number;
+        repairPower(energy: number): number;
+        repairPowerMax: number;
     }
 }
 
@@ -113,6 +115,28 @@ export function init() {
                 if (part.type == WORK && part.hits > 0) power += BUILD_POWER; // TODO: account for boosts
             }
             return Math.min(energy, power);
+        }
+    }
+
+    if (!Creep.prototype.repairPowerMax) {
+        Object.defineProperty(Creep.prototype, "repairPowerMax", {
+            get: function() {
+                if (this.memory.repairPowerMax === undefined || this.memory.repairPowerMax === null) {
+                    this.memory.repairPowerMax = this.getActiveBodyparts(WORK) * REPAIR_POWER; // TODO: account for boosts
+                }
+                return this.memory.repairPowerMax;
+            }
+        });
+    }
+
+    if (!Creep.prototype.repairPower) {
+        Creep.prototype.repairPower = function(energy: number): number {
+            if (this.hits === this.hitsMax) return Math.min(energy / REPAIR_COST, this.repairPowerMax);
+            let power = 0;
+            for (let part of this.body) {
+                if (part.type == WORK && part.hits > 0) power += REPAIR_POWER; // TODO: account for boosts
+            }
+            return Math.min(energy / REPAIR_COST, power);
         }
     }
 }

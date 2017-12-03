@@ -16,7 +16,7 @@ export function employBuilders(room: Room, unemployedWorkers: Creep[], energySto
             let target = searchOrigin.findClosestByPath([buildTargets[0]]);
             if (!target) break;
             let energyRequired = Math.min(target.progressTotal - target.plannedProgress, capacity);
-            targets.push(new BuildTarget(target, energyRequired));
+            targets.push(new BuildTarget(target, energyRequired)); // TODO: account for boosts
             capacity -= energyRequired;
             totalEnergyRequired += energyRequired;
             if (target.plannedProgress + energyRequired >= target.progressTotal) {

@@ -3,6 +3,7 @@ import { StationaryHarvestJob } from "./stationary-harvest-job";
 import { UpgradeJob } from "./upgrade-job";
 import { BuildJob } from "./build-job";
 import { HaulJob } from "./haul-job";
+import { RepairJob } from "./repair-job";
 
 export function loadJob(creep: Creep): Job {
     switch (creep.memory.job.name) {
@@ -10,6 +11,8 @@ export function loadJob(creep: Creep): Job {
             return StationaryHarvestJob.load(creep);
         case "build":
             return BuildJob.load(creep);
+        case "repair":
+            return RepairJob.load(creep);
         case "haul":
             return HaulJob.load(creep);
         case "upgrade":

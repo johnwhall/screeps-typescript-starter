@@ -34,7 +34,7 @@ export interface RemotableConstructionSite extends Remotable<ConstructionSite> {
     readonly structureType: StructureConstant;
 }
 
-export interface RemotableStructure<S extends Structure, T extends StructureConstant> extends Remotable<S> {
+export interface RemotableStructure<S extends Structure = Structure, T extends StructureConstant = StructureConstant> extends Remotable<S> {
     readonly hits: number;
     readonly hitsMax: number;
     plannedHits: number;
