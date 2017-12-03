@@ -10,6 +10,7 @@ import * as LocalConstructionSiteModule from "./locals/local-construction-site";
 import * as LocalStorageModule from "./locals/local-storage";
 import * as LocalSpawnModule from "./locals/local-spawn";
 import * as LocalExtensionModule from "./locals/local-extension";
+import * as LocalRoadModule from "./locals/local-road";
 
 export function init() {
     FlagModule.init();
@@ -24,4 +25,5 @@ export function init() {
     LocalStorageModule.init();
     LocalSpawnModule.init();
     LocalExtensionModule.init();
+    LocalRoadModule.init();
 }

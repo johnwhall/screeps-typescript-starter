@@ -49,6 +49,7 @@ export interface RemotableContainer extends RemotableStructure<StructureContaine
 
 export interface RemotableSpawn extends RemotableStructure<StructureSpawn, STRUCTURE_SPAWN>, RemotableEnergyStore<StructureSpawn> {}
 export interface RemotableExtension extends RemotableStructure<StructureExtension, STRUCTURE_EXTENSION>, RemotableEnergyStore<StructureExtension> {}
+export interface RemotableRoad extends RemotableStructure<StructureRoad, STRUCTURE_ROAD> {}
 
 export interface RemotableStorage extends RemotableStructure<StructureStorage, STRUCTURE_STORAGE>, RemotableEnergyStore<StructureStorage> {
     store: StoreDefinition;

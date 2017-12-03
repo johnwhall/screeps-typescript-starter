@@ -38,7 +38,7 @@ function mloop() {
                 if (!room.controller || !room.controller.my) return;
 
                 room.casteTarget(Caste.STATIONARY_HARVESTER, 0);
-                room.casteTarget(Caste.WORKER, 2);
+                room.casteTarget(Caste.WORKER, 1);
                 room.casteTarget(Caste.HAULER, 0);
 
                 _.forEach(room.assignedCreeps, (casteCreeps) => _.forEach(casteCreeps, (c) => { if (c.job) c.job.update(); }));
@@ -72,7 +72,7 @@ function mloop() {
                 employHaulers(unemployedHaulers, sourceContainers, haulTargets);
 
                 // REPAIRERS
-                let repairTargets = _.filter(room.assignedStructures, (cs) => cs.plannedHits < 0.95 * cs.hitsMax);
+                let repairTargets = _.filter(room.assignedStructures, (cs) => cs.plannedHits < 0.99 * cs.hitsMax);
                 employRepairers(room, unemployedWorkers, workerEnergyStores, repairTargets);
 
                 // BUILDERS

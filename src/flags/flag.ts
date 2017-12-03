@@ -3,6 +3,9 @@ import { RemoteContainer } from "../remotes/remote-container";
 import { RemoteStorage } from "../remotes/remote-storage";
 import { RemoteSource } from "../remotes/remote-source";
 import { RemoteConstructionSite } from "../remotes/remote-construction-site";
+import { RemoteRoad } from "../remotes/remote-road";
+import { RemoteSpawn } from "../remotes/remote-spawn";
+import { RemoteExtension } from "../remotes/remote-extension";
 
 export enum FlagType {
     FLAG_STRUCTURE = "FLAG_STRUCTURE",
@@ -82,6 +85,9 @@ export function init() {
                             switch (this.structureType) {
                                 case STRUCTURE_CONTAINER: this._remote = new RemoteContainer(this); break;
                                 case STRUCTURE_STORAGE: this._remote = new RemoteStorage(this); break;
+                                case STRUCTURE_ROAD: this._remote = new RemoteRoad(this); break;
+                                case STRUCTURE_SPAWN: this._remote = new RemoteSpawn(this); break;
+                                case STRUCTURE_EXTENSION: this._remote = new RemoteExtension(this); break;
                                 default: throw new Error("Remote not yet implemented for flag structure type " + this.structureType + " (flag: " + this.name + ")");
                             }
                             break;
