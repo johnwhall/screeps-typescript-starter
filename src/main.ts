@@ -4,7 +4,7 @@ import { log } from "./lib/logger/log";
 
 import { init } from "./init";
 import { Caste } from "./caste";
-import { RemotableEnergyStore, RemotableContainer, RemotableStorage, RemotableSpawn, RemotableExtension, REMOTABLE_TYPE_SOURCE } from "./remotables/remotable";
+import { RemotableEnergyStore, RemotableContainer, RemotableStorage, RemotableSpawn, RemotableExtension, REMOTABLE_TYPE_SOURCE, RemotableWall, RemotableRampart } from "./remotables/remotable";
 import { employUpgraders } from "./planning/upgraders";
 import { employStationaryHarvesters } from "./planning/stationary-harvesters";
 import { employHaulers } from "./planning/haulers";
@@ -38,7 +38,7 @@ function mloop() {
                 if (!room.controller || !room.controller.my) return;
 
                 room.casteTarget(Caste.STATIONARY_HARVESTER, 0);
-                room.casteTarget(Caste.WORKER, 1);
+                room.casteTarget(Caste.WORKER, 2);
                 room.casteTarget(Caste.HAULER, 0);
 
                 _.forEach(room.assignedCreeps, (casteCreeps) => _.forEach(casteCreeps, (c) => { if (c.job) c.job.update(); }));
@@ -72,7 +72,14 @@ function mloop() {
                 employHaulers(unemployedHaulers, sourceContainers, haulTargets);
 
                 // REPAIRERS
-                let repairTargets = _.filter(room.assignedStructures, (cs) => cs.plannedHits < 0.99 * cs.hitsMax);
+                let repairTargets = _.filter(room.assignedStructures, (cs) => cs.structureType !== STRUCTURE_WALL && cs.structureType !== STRUCTURE_RAMPART && cs.plannedHits < 0.9 * cs.hitsMax);
+                if (repairTargets.length > 0) repairTargets = _.filter(room.assignedStructures, (cs) => cs.structureType !== STRUCTURE_WALL && cs.structureType !== STRUCTURE_RAMPART && cs.plannedHits < 0.98 * cs.hitsMax); // repair in bulk
+                if (!room.rampWallUnderRepair) {
+                    let weakestRampWall: RemotableWall | RemotableRampart | undefined = undefined;
+                    for (let wall of room.assignedWalls) if (wall.plannedHits < wall.hitsMax && (weakestRampWall === undefined || wall.plannedHits < weakestRampWall.plannedHits)) weakestRampWall = wall;
+                    for (let ramp of room.assignedRamparts) if (ramp.plannedHits < ramp.hitsMax && (weakestRampWall === undefined || ramp.plannedHits < weakestRampWall.plannedHits)) weakestRampWall = ramp;
+                    if (weakestRampWall) repairTargets.push(weakestRampWall);
+                }
                 employRepairers(room, unemployedWorkers, workerEnergyStores, repairTargets);
 
                 // BUILDERS

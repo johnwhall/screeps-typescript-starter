@@ -11,6 +11,8 @@ import * as LocalStorageModule from "./locals/local-storage";
 import * as LocalSpawnModule from "./locals/local-spawn";
 import * as LocalExtensionModule from "./locals/local-extension";
 import * as LocalRoadModule from "./locals/local-road";
+import * as LocalWallModule from "./locals/local-wall";
+import * as LocalRampartModule from "./locals/local-rampart";
 
 export function init() {
     FlagModule.init();
@@ -26,4 +28,6 @@ export function init() {
     LocalSpawnModule.init();
     LocalExtensionModule.init();
     LocalRoadModule.init();
+    LocalWallModule.init();
+    LocalRampartModule.init();
 }

@@ -13,7 +13,7 @@ export class RemoteContainer extends RemoteStructure<StructureContainer, STRUCTU
 
     get liveObject(): StructureContainer | undefined {
         if (this.room == undefined) return undefined;
-        else return this._liveObject = <StructureContainer>this.pos.lookFor(LOOK_STRUCTURES).filter((s: RoomObject) => (<Structure>s).structureType == STRUCTURE_CONTAINER)[0];
+        else return this._liveObject = <StructureContainer>this.pos.lookFor(LOOK_STRUCTURES).filter((s: RoomObject) => (<Structure>s).structureType == STRUCTURE_CONTAINER)[0]; // TODO: this does not cache... it calls lookFor every time!
     }
 
     get store(): StoreDefinition {

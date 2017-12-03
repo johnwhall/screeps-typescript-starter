@@ -1,6 +1,6 @@
 import { SpawnQueueItem } from "./spawn-queue-item";
 import { Caste, selectParts } from "./caste";
-import { RemotableSource, RemotableContainer, RemotableConstructionSite, RemotableSpawn, RemotableExtension, RemotableStructure } from "./remotables/remotable";
+import { RemotableSource, RemotableContainer, RemotableConstructionSite, RemotableSpawn, RemotableExtension, RemotableStructure, RemotableRampart, RemotableWall } from "./remotables/remotable";
 import { FlagType } from "./flags/flag";
 import { nextUuid } from "./utils";
 
@@ -15,7 +15,10 @@ declare global {
         readonly spawns: RemotableSpawn[];
         readonly extensions: RemotableExtension[];
         readonly assignedStructures: RemotableStructure[];
+        readonly assignedWalls: RemotableWall[];
+        readonly assignedRamparts: RemotableRampart[];
         spawnQueue: SpawnQueueItem[];
+        rampWallUnderRepair: boolean;
         assignedFlagRemoved(flag: Flag): void;
         casteTarget(caste: Caste, newTarget?: number): number;
         queueFromTargets(): void;
@@ -134,12 +137,30 @@ export function init() {
         Object.defineProperty(Room.prototype, "assignedStructures", {
             get: function() {
                 if (this._assignedStructures === undefined) {
-                    const implementedTypes = [ STRUCTURE_CONTAINER, STRUCTURE_CONTROLLER, STRUCTURE_EXTENSION, STRUCTURE_SPAWN, STRUCTURE_STORAGE, STRUCTURE_ROAD ];
+                    const implementedTypes = [ STRUCTURE_CONTAINER, STRUCTURE_CONTROLLER, STRUCTURE_EXTENSION, STRUCTURE_SPAWN, STRUCTURE_STORAGE, STRUCTURE_ROAD, STRUCTURE_WALL, STRUCTURE_RAMPART ];
                     let roomStructures = _.pluck(this.find(FIND_STRUCTURES, { filter: (s: Structure) => _.contains(implementedTypes, s.structureType) }), "remotable");
                     let flagStructures = _.pluck(this.assignedFlags.filter((f: Flag) => f.type === FlagType.FLAG_STRUCTURE && _.contains(implementedTypes, f.structureType)), "remote");
                     this._assignedStructures = _.unique(roomStructures.concat(flagStructures));
                 }
                 return this._assignedStructures;
+            }
+        });
+    }
+
+    if (!Room.prototype.assignedWalls) {
+        Object.defineProperty(Room.prototype, "assignedWalls", {
+            get: function() {
+                if (this._assignedWalls === undefined) this._assignedWalls = _.filter(<RemotableStructure[]>this.assignedStructures, (s) => s.structureType === STRUCTURE_WALL);
+                return this._assignedWalls;
+            }
+        });
+    }
+
+    if (!Room.prototype.assignedRamparts) {
+        Object.defineProperty(Room.prototype, "assignedRamparts", {
+            get: function() {
+                if (this._assignedRamparts === undefined) this._assignedRamparts = _.filter(<RemotableStructure[]>this.assignedStructures, (s) => s.structureType === STRUCTURE_RAMPART);
+                return this._assignedRamparts;
             }
         });
     }
@@ -152,6 +173,17 @@ export function init() {
             },
             set: function (spawnQueue: SpawnQueueItem[]) {
                 this.memory.spawnQueue = this._spawnQueue = spawnQueue;
+            }
+        });
+    }
+
+    if (!Room.prototype.rampWallUnderRepair) {
+        Object.defineProperty(Room.prototype, "rampWallUnderRepair", {
+            get: function () {
+                return this._rampWallUnderRepair || false;
+            },
+            set: function (rampWallUnderRepair: boolean) {
+                this._rampWallUnderRepair = rampWallUnderRepair;
             }
         });
     }

@@ -138,7 +138,12 @@ export class RepairJob extends Job {
 
     update(): void {
         if (this.phase <= Phase.LOAD) this.energyStore.availableEnergyForPickup -= (this.totalRemainingEnergyRequirement - this.creep.carry.energy);
-        _.forEach(this.targets, (t) => { if (t.site) t.site.plannedHits += t.remainingRepairAmount; });
+        for (let t of this.targets) {
+            if (t.site) {
+                t.site.plannedHits += t.remainingRepairAmount;
+                if (this.creep.homeRoom && (t.site.structureType === STRUCTURE_WALL || t.site.structureType === STRUCTURE_RAMPART)) this.creep.homeRoom.rampWallUnderRepair = true;
+            }
+        }
     }
 
     static load(creep: Creep): RepairJob {

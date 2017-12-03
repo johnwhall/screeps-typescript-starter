@@ -6,6 +6,8 @@ import { RemoteConstructionSite } from "../remotes/remote-construction-site";
 import { RemoteRoad } from "../remotes/remote-road";
 import { RemoteSpawn } from "../remotes/remote-spawn";
 import { RemoteExtension } from "../remotes/remote-extension";
+import { RemoteWall } from "../remotes/remote-wall";
+import { RemoteRampart } from "../remotes/remote-rampart";
 
 export enum FlagType {
     FLAG_STRUCTURE = "FLAG_STRUCTURE",
@@ -88,6 +90,8 @@ export function init() {
                                 case STRUCTURE_ROAD: this._remote = new RemoteRoad(this); break;
                                 case STRUCTURE_SPAWN: this._remote = new RemoteSpawn(this); break;
                                 case STRUCTURE_EXTENSION: this._remote = new RemoteExtension(this); break;
+                                case STRUCTURE_WALL: this._remote = new RemoteWall(this); break;
+                                case STRUCTURE_RAMPART: this._remote = new RemoteRampart(this); break;
                                 default: throw new Error("Remote not yet implemented for flag structure type " + this.structureType + " (flag: " + this.name + ")");
                             }
                             break;
