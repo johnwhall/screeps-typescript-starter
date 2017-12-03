@@ -5,8 +5,8 @@ export function employHaulers(unemployedHaulers: Creep[], energyStores: Remotabl
     for (let i = 0; i < unemployedHaulers.length; i++) {
         let hauler = unemployedHaulers[i];
         let targets = [];
-        let maxAvailableEnergyStore = _.max(energyStores, (es) => es.plannedEnergy);
-        let capacity = Math.min(maxAvailableEnergyStore.plannedEnergy, hauler.freeCapacity) + hauler.carry.energy;
+        let maxAvailableEnergyStore = _.max(energyStores, (es) => es.availableEnergyForPickup);
+        let capacity = Math.min(maxAvailableEnergyStore.availableEnergyForPickup, hauler.freeCapacity) + hauler.carry.energy;
         if (capacity === 0) continue;
         let searchOrigin = hauler.pos;
         let totalEnergyRequired = 0;
@@ -14,18 +14,18 @@ export function employHaulers(unemployedHaulers: Creep[], energyStores: Remotabl
         while (capacity > 0 && haulTargets.length > 0) {
             let target = searchOrigin.findClosestByPath([haulTargets[0]]);
             if (!target) break;
-            let energyRequired = Math.min(target.energyCapacity - target.plannedEnergy, capacity);
+            let energyRequired = Math.min(target.energyCapacity - target.plannedEnergyWithIncoming, capacity);
             targets.push(new HaulTarget(target, energyRequired));
             capacity -= energyRequired;
             totalEnergyRequired += energyRequired;
-            if (target.plannedEnergy + energyRequired >= target.energyCapacity) {
+            if (target.plannedEnergyWithIncoming + energyRequired >= target.energyCapacity) {
                 haulTargets.splice(0, 1);
             }
             searchOrigin = target.pos;
         }
 
         if (targets.length > 0) {
-            let energyStore = hauler.pos.findClosestByPath(energyStores, { filter: (es: RemotableEnergyStore) => es.energy >= totalEnergyRequired - hauler.carry.energy });
+            let energyStore = hauler.pos.findClosestByPath(energyStores, { filter: (es: RemotableEnergyStore) => es.availableEnergyForPickup >= totalEnergyRequired - hauler.carry.energy });
             if (!energyStore) continue;
             console.log(`Ordering ${hauler.name} to pick up ${totalEnergyRequired} from ${energyStore} and deliver to ${targets}`);
             hauler.job = HaulJob.newJob(hauler, energyStore, targets);

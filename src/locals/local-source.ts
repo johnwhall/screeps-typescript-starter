@@ -4,12 +4,14 @@ import { RemotableSource, REMOTABLE_TYPE_SOURCE, RemotableContainer } from "../r
 export class LocalSource extends Local<Source> implements RemotableSource {
     readonly type = REMOTABLE_TYPE_SOURCE;
     covered: boolean = false;
-    plannedEnergy: number;
+    availableEnergyForPickup: number;
+    plannedEnergyWithIncoming: number;
     private _container: RemotableContainer | undefined;
 
     constructor(liveObject: Source) {
         super(liveObject);
-        this.plannedEnergy = this.liveObject.energy;
+        this.availableEnergyForPickup = this.liveObject.energy;
+        this.plannedEnergyWithIncoming = this.availableEnergyForPickup;
     }
 
     get energy(): number { return this.liveObject.energy; }

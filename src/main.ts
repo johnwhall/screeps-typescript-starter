@@ -58,7 +58,7 @@ function mloop() {
 
                 // FILLERS
                 let fillerCreeps = room.assignedCreeps[Caste.HAULER].length === 0 ? unemployedWorkers : unemployedHaulers;
-                let fillTargets = _.filter((<(RemotableSpawn | RemotableExtension)[]>room.spawns).concat(room.extensions), (t) => t.plannedEnergy < t.energyCapacity);
+                let fillTargets = _.filter((<(RemotableSpawn | RemotableExtension)[]>room.spawns).concat(room.extensions), (t) => t.plannedEnergyWithIncoming < t.energyCapacity);
                 let fillEnergyStores = workerEnergyStores;
                 if (fillerCreeps === unemployedHaulers) fillEnergyStores = fillEnergyStores.filter((es) => es.type !== REMOTABLE_TYPE_SOURCE);
                 employHaulers(fillerCreeps, fillEnergyStores, fillTargets);
@@ -67,7 +67,7 @@ function mloop() {
                 let haulTargets: (RemotableContainer | RemotableStorage)[] = [];
                 for (let container of room.assignedContainers) if (container.source === undefined) haulTargets.push(container);
                 if (room.storage !== undefined) haulTargets.push(room.storage.remotable);
-                haulTargets = haulTargets.filter((ht) => ht.plannedEnergy < ht.energyCapacity);
+                haulTargets = haulTargets.filter((ht) => ht.plannedEnergyWithIncoming < ht.energyCapacity);
                 employHaulers(unemployedHaulers, sourceContainers, haulTargets);
 
                 // BUILDERS
@@ -76,6 +76,8 @@ function mloop() {
 
                 // UPGRADERS
                 employUpgraders(room, unemployedWorkers, workerEnergyStores);
+
+                // _.forEach((<any>room.assignedSources).concat(room.assignedContainers, (<any>room.storage).remotable), (es) => console.log(es + ": plannedEnergyWithIncoming: " + es.plannedEnergyWithIncoming + " availableEnergyForPickup: " + es.availableEnergyForPickup));
 
                 room.queueFromTargets();
                 room.spawnFromQueue();

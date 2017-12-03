@@ -3,12 +3,14 @@ import { RemotableContainer, RemotableSource } from "../remotables/remotable";
 
 export class LocalContainer extends LocalStructure<StructureContainer, STRUCTURE_CONTAINER> implements RemotableContainer {
     readonly type = STRUCTURE_CONTAINER;
-    plannedEnergy: number;
+    availableEnergyForPickup: number;
+    plannedEnergyWithIncoming: number;
     private _source: RemotableSource | undefined;
 
     constructor(liveObject: StructureContainer) {
         super(liveObject);
-        this.plannedEnergy = this.liveObject.store[RESOURCE_ENERGY];
+        this.availableEnergyForPickup = this.liveObject.store[RESOURCE_ENERGY];
+        this.plannedEnergyWithIncoming = this.availableEnergyForPickup;
     }
 
     get store(): StoreDefinition { return this.liveObject.store; }

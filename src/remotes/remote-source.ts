@@ -4,7 +4,8 @@ import { RemotableSource, REMOTABLE_TYPE_SOURCE, RemotableContainer } from "../r
 export class RemoteSource extends Remote<Source> implements RemotableSource {
     readonly type = REMOTABLE_TYPE_SOURCE;
     covered: boolean = false;
-    plannedEnergy: number;
+    availableEnergyForPickup: number;
+    plannedEnergyWithIncoming: number = this.energyCapacity;
     private _liveObject: Source;
     private _energy: number;
     private _energyCapacity: number;
@@ -45,7 +46,7 @@ export class RemoteSource extends Remote<Source> implements RemotableSource {
             this.flag.memory.lastKnownEnergy = this.liveObject.energy;
             this.flag.memory.lastKnownEnergyCapacity = this.liveObject.energyCapacity;
         }
-        this.plannedEnergy = this.energy;
+        this.availableEnergyForPickup = this.energy;
     }
 
     shouldRemove(): boolean { return false; }

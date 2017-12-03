@@ -20,11 +20,13 @@ export class RemoteExtension extends RemoteStructure<StructureExtension, STRUCTU
 
     get energy(): number { return this._local.energy; }
     get energyCapacity(): number { return this._local.energyCapacity; }
-    get plannedEnergy(): number { return this._local.plannedEnergy; }
-    set plannedEnergy(plannedEnergy: number) { this._local.plannedEnergy = plannedEnergy; }
+    get availableEnergyForPickup(): number { return this._local.availableEnergyForPickup; }
+    set availableEnergyForPickup(availableEnergyForPickup: number) { this._local.availableEnergyForPickup = availableEnergyForPickup; }
+    get plannedEnergyWithIncoming(): number { return this._local.plannedEnergyWithIncoming; }
+    set plannedEnergyWithIncoming(plannedEnergyWithIncoming: number) { this._local.plannedEnergyWithIncoming = plannedEnergyWithIncoming; }
     get hits(): number { return this._local.hits; }
     get hitsMax(): number { return this._local.hitsMax; }
-    get plannedHits(): number { return this._local.plannedEnergy; }
+    get plannedHits(): number { return this._local.availableEnergyForPickup; }
     set plannedHits(plannedHits: number) { this._local.plannedHits = plannedHits; }
 
     shouldRemove(): boolean { return this._local === undefined; }

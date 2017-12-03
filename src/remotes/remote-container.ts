@@ -4,7 +4,8 @@ import { RemotableContainer, RemotableSource } from "../remotables/remotable";
 export class RemoteContainer extends RemoteStructure<StructureContainer, STRUCTURE_CONTAINER> implements RemotableContainer {
     readonly type = STRUCTURE_CONTAINER;
     readonly structureType: STRUCTURE_CONTAINER = STRUCTURE_CONTAINER;
-    plannedEnergy: number;
+    availableEnergyForPickup: number;
+    plannedEnergyWithIncoming: number;
     private _liveObject: StructureContainer;
     private _store: StoreDefinition;
     private _storeCapacity: number;
@@ -49,7 +50,8 @@ export class RemoteContainer extends RemoteStructure<StructureContainer, STRUCTU
             this.flag.memory.lastKnownStore = this.liveObject.store;
             this.flag.memory.lastKnownStoreCapacity = this.liveObject.storeCapacity;
         }
-        this.plannedEnergy = this.energy;
+        this.availableEnergyForPickup = this.energy;
+        this.plannedEnergyWithIncoming = this.energy;
     }
 
 }

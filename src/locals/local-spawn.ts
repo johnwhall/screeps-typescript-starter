@@ -3,11 +3,13 @@ import { RemotableSpawn } from "../remotables/remotable";
 
 export class LocalSpawn extends LocalStructure<StructureSpawn, STRUCTURE_SPAWN> implements RemotableSpawn {
     readonly type = STRUCTURE_SPAWN;
-    plannedEnergy: number;
+    availableEnergyForPickup: number;
+    plannedEnergyWithIncoming: number;
 
     constructor(liveObject: StructureSpawn) {
         super(liveObject);
-        this.plannedEnergy = this.energy;
+        this.availableEnergyForPickup = this.energy;
+        this.plannedEnergyWithIncoming = this.energy;
     }
 
     get energy(): number { return this.liveObject.energy; }

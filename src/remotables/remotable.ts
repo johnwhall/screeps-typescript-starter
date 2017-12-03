@@ -18,7 +18,8 @@ declare type RemotableEnergyStoreTypes = Source | StructureContainer | Structure
 export interface RemotableEnergyStore<T extends RemotableEnergyStoreTypes = RemotableEnergyStoreTypes> extends Remotable<T>{
     readonly energy: number;
     readonly energyCapacity: number;
-    plannedEnergy: number;
+    availableEnergyForPickup: number;
+    plannedEnergyWithIncoming: number;
 }
 
 export interface RemotableSource extends Remotable<Source>, RemotableEnergyStore<Source> {

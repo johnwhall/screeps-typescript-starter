@@ -3,11 +3,13 @@ import { RemotableStorage } from "../remotables/remotable";
 
 export class LocalStorage extends LocalStructure<StructureStorage, STRUCTURE_STORAGE> implements RemotableStorage {
     readonly type = STRUCTURE_STORAGE;
-    plannedEnergy: number;
+    availableEnergyForPickup: number;
+    plannedEnergyWithIncoming: number;
 
     constructor(liveObject: StructureStorage) {
         super(liveObject);
-        this.plannedEnergy = this.liveObject.store[RESOURCE_ENERGY];
+        this.availableEnergyForPickup = this.liveObject.store[RESOURCE_ENERGY];
+        this.plannedEnergyWithIncoming = this.availableEnergyForPickup;
     }
 
     get store(): StoreDefinition { return this.liveObject.store; }

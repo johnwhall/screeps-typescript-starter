@@ -91,7 +91,7 @@ export class UpgradeJob extends Job {
     }
 
     update(): void {
-        if (this.phase <= Phase.LOAD) this.energyStore.plannedEnergy -= Math.max(0, this.totalEnergyRequired - this.creep.carry.energy);
+        if (this.phase <= Phase.LOAD) this.energyStore.availableEnergyForPickup -= Math.max(0, this.totalEnergyRequired - this.creep.carry.energy);
     }
 
     static load(creep: Creep): UpgradeJob { return new UpgradeJob(creep); }

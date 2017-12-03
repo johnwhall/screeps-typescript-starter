@@ -27,6 +27,7 @@ export class HaulJob extends Job {
     private _energyStore: RemotableEnergyStore;
     private _targets: HaulTarget[];
     private _totalRemainingTransferAmount: number;
+    private _transferredThisTick: boolean = false;
 
     static newJob(creep: Creep, energyStore: RemotableEnergyStore, targets: HaulTarget[]): HaulJob {
         try {
@@ -106,8 +107,10 @@ export class HaulJob extends Job {
 
             case Phase.UNLOAD:
                 let target = this.targets[0];
+                if (this._transferredThisTick) return true;
                 if (target.site.liveObject === undefined) throw new Error(`Missing site liveObject for target ${target}`);
                 this.creep.transfer(target.site.liveObject, RESOURCE_ENERGY, Math.min(target.site.energyCapacity - target.site.energy, this.creep.carry.energy, target.remainingTransferAmount));
+                this._transferredThisTick = true;
                 this.phase = Phase.MOVE_TO_TARGET;
                 if(this.targetFinished()) return this.run();
                 else return false;
@@ -137,8 +140,8 @@ export class HaulJob extends Job {
     }
 
     update(): void {
-        if (this.phase <= Phase.LOAD) this.energyStore.plannedEnergy -= (this.totalRemainingEnergyRequirement - this.creep.carry.energy);
-        // TODO: update plannedEnergy (and maybe separate plannedEnergy into incoming and outgoing)
+        if (this.phase <= Phase.LOAD) this.energyStore.availableEnergyForPickup -= (this.totalRemainingEnergyRequirement - this.creep.carry.energy);
+        _.forEach(this.targets, (t) => { if (t.site) t.site.plannedEnergyWithIncoming += t.remainingTransferAmount; });
     }
 
     static load(creep: Creep): HaulJob {

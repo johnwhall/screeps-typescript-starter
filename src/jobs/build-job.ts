@@ -157,7 +157,7 @@ export class BuildJob extends Job {
     }
 
     update(): void {
-        if (this.phase <= Phase.LOAD) this.energyStore.plannedEnergy -= (this.totalRemainingEnergyRequirement - this.creep.carry.energy);
+        if (this.phase <= Phase.LOAD) this.energyStore.availableEnergyForPickup -= (this.totalRemainingEnergyRequirement - this.creep.carry.energy);
         _.forEach(this.targets, (t) => { if (t.site) t.site.plannedProgress += t.myRemainingProgress; });
     }
 

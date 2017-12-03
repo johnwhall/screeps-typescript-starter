@@ -6,8 +6,8 @@ export function employBuilders(room: Room, unemployedWorkers: Creep[], energySto
     for (let i = 0; i < unemployedWorkers.length; i++) {
         let worker = unemployedWorkers[i];
         let targets = [];
-        let maxAvailableEnergyStore = _.max(energyStores, (es) => es.plannedEnergy);
-        let capacity = Math.min(maxAvailableEnergyStore.plannedEnergy, worker.freeCapacity) + worker.carry.energy;
+        let maxAvailableEnergyStore = _.max(energyStores, (es) => es.availableEnergyForPickup);
+        let capacity = Math.min(maxAvailableEnergyStore.availableEnergyForPickup, worker.freeCapacity) + worker.carry.energy;
         if (capacity === 0) continue;
         let searchOrigin = worker.pos;
         let totalEnergyRequired = 0;

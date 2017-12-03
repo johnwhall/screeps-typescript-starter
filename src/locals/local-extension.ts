@@ -3,11 +3,13 @@ import { RemotableExtension } from "../remotables/remotable";
 
 export class LocalExtension extends LocalStructure<StructureExtension, STRUCTURE_EXTENSION> implements RemotableExtension {
     readonly type = STRUCTURE_EXTENSION;
-    plannedEnergy: number;
+    availableEnergyForPickup: number;
+    plannedEnergyWithIncoming: number;
 
     constructor(liveObject: StructureExtension) {
         super(liveObject);
-        this.plannedEnergy = this.energy;
+        this.availableEnergyForPickup = this.energy;
+        this.plannedEnergyWithIncoming = this.energy;
     }
 
     get energy(): number { return this.liveObject.energy; }

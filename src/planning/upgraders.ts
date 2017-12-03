@@ -6,8 +6,8 @@ export function employUpgraders(room: Room, unemployedWorkers: Creep[], energySt
     if (!room.controller || !room.controller.my) throw new Error(`Unowned room: ${room}`);
     for (let i = 0; i < unemployedWorkers.length; i++) {
         let worker = unemployedWorkers[i];
-        let maxAvailableEnergyStore = _.max(energyStores, (es) => es.plannedEnergy);
-        let capacity = Math.min(maxAvailableEnergyStore.plannedEnergy, worker.freeCapacity) + worker.carry.energy;
+        let maxAvailableEnergyStore = _.max(energyStores, (es) => es.availableEnergyForPickup);
+        let capacity = Math.min(maxAvailableEnergyStore.availableEnergyForPickup, worker.freeCapacity) + worker.carry.energy;
         if (capacity === 0) continue;
         let energyStore = findEnergyStore(worker, room, capacity);
         if (!energyStore) continue;
