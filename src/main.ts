@@ -4,7 +4,7 @@ import { log } from "./lib/logger/log";
 
 import { init } from "./init";
 import { Caste } from "./caste";
-import { RemotableEnergyStore, RemotableContainer, RemotableStorage, RemotableSpawn, RemotableExtension } from "remotables/remotable";
+import { RemotableEnergyStore, RemotableContainer, RemotableStorage, RemotableSpawn, RemotableExtension, REMOTABLE_TYPE_SOURCE } from "./remotables/remotable";
 import { employUpgraders } from "./planning/upgraders";
 import { employStationaryHarvesters } from "./planning/stationary-harvesters";
 import { employHaulers } from "./planning/haulers";
@@ -33,12 +33,12 @@ function mloop() {
                 if (!room.controller || !room.controller.my) return;
 
                 room.casteTarget(Caste.STATIONARY_HARVESTER, 1);
-                room.casteTarget(Caste.WORKER, 1);
+                room.casteTarget(Caste.WORKER, 2);
                 room.casteTarget(Caste.HAULER, 1);
 
                 _.forEach(room.assignedCreeps, (casteCreeps) => _.forEach(casteCreeps, (c) => { if (c.job) c.job.update(); }));
 
-                let roomUncoveredSources = _.filter(room.assignedSources, (s) => !s.covered);
+                let roomUncoveredSources = _.sortBy(_.filter(room.assignedSources, (s) => !s.covered), "container");
 
                 let unemployedStationaryHarvesters = _.filter(room.assignedCreeps[Caste.STATIONARY_HARVESTER], (c: Creep) => !c.job);
                 let unemployedHaulers = _.filter(room.assignedCreeps[Caste.HAULER], (c: Creep) => !c.job);
@@ -47,6 +47,8 @@ function mloop() {
                 // STATIONARY HARVESTERS
                 employStationaryHarvesters(unemployedStationaryHarvesters, roomUncoveredSources);
 
+                let sourceContainers: RemotableContainer[] = [];
+                for (let container of room.assignedContainers) if (container.source !== undefined) sourceContainers.push(container);
                 let workerEnergyStores: RemotableEnergyStore[] = _.clone(roomUncoveredSources);
                 for (let container of room.assignedContainers) if (container.source === undefined) workerEnergyStores.push(container);
                 if (room.storage !== undefined) workerEnergyStores.push(room.storage.remotable);
@@ -54,11 +56,11 @@ function mloop() {
                 // FILLERS
                 let fillerCreeps = room.assignedCreeps[Caste.HAULER].length === 0 ? unemployedWorkers : unemployedHaulers;
                 let fillTargets = _.filter((<(RemotableSpawn | RemotableExtension)[]>room.spawns).concat(room.extensions), (t) => t.plannedEnergy < t.energyCapacity);
-                employHaulers(fillerCreeps, workerEnergyStores, fillTargets);
+                let fillEnergyStores = workerEnergyStores.concat(sourceContainers);
+                if (fillerCreeps === unemployedHaulers) fillEnergyStores = fillEnergyStores.filter((es) => es.type !== REMOTABLE_TYPE_SOURCE);
+                employHaulers(fillerCreeps, fillEnergyStores, fillTargets);
 
                 // HAULERS
-                let sourceContainers: RemotableContainer[] = [];
-                for (let container of room.assignedContainers) if (container.source !== undefined) sourceContainers.push(container);
                 let haulTargets: (RemotableContainer | RemotableStorage)[] = [];
                 for (let container of room.assignedContainers) if (container.source === undefined) haulTargets.push(container);
                 if (room.storage !== undefined) haulTargets.push(room.storage.remotable);
