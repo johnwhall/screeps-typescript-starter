@@ -19,7 +19,7 @@ export function employRepairers(room: Room, unemployedWorkers: Creep[], energySt
             targets.push(new RepairTarget(target, energyRequired / REPAIR_COST)); // TODO: account for boosts
             capacity -= energyRequired;
             totalEnergyRequired += energyRequired;
-            if (target.plannedHits + energyRequired / REPAIR_COST >= target.hitsMax) {
+            if (target.plannedHits + energyRequired / REPAIR_COST >= target.hitsMax || target.structureType === STRUCTURE_WALL || target.structureType === STRUCTURE_RAMPART) {
                 repairTargets.splice(0, 1);
             }
             searchOrigin = target.pos;

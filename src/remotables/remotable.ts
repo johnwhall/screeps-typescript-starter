@@ -1,5 +1,5 @@
-import { Remote } from "../remotes/remote";
-import { Local } from "../locals/local";
+import { Remote } from "./remotes/remote";
+import { Local } from "./locals/local";
 
 export declare const REMOTABLE_TYPE_SOURCE = "source";
 export declare const REMOTABLE_TYPE_CONSTRUCTION_SITE = "source";

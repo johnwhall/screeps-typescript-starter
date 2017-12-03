@@ -1,13 +1,13 @@
-import { Remote } from "../remotes/remote";
-import { RemoteContainer } from "../remotes/remote-container";
-import { RemoteStorage } from "../remotes/remote-storage";
-import { RemoteSource } from "../remotes/remote-source";
-import { RemoteConstructionSite } from "../remotes/remote-construction-site";
-import { RemoteRoad } from "../remotes/remote-road";
-import { RemoteSpawn } from "../remotes/remote-spawn";
-import { RemoteExtension } from "../remotes/remote-extension";
-import { RemoteWall } from "../remotes/remote-wall";
-import { RemoteRampart } from "../remotes/remote-rampart";
+import { Remote } from "../remotables/remotes/remote";
+import { RemoteContainer } from "../remotables/remotes/remote-container";
+import { RemoteStorage } from "../remotables/remotes/remote-storage";
+import { RemoteSource } from "../remotables/remotes/remote-source";
+import { RemoteConstructionSite } from "../remotables/remotes/remote-construction-site";
+import { RemoteRoad } from "../remotables/remotes/remote-road";
+import { RemoteSpawn } from "../remotables/remotes/remote-spawn";
+import { RemoteExtension } from "../remotables/remotes/remote-extension";
+import { RemoteWall } from "../remotables/remotes/remote-wall";
+import { RemoteRampart } from "../remotables/remotes/remote-rampart";
 
 export enum FlagType {
     FLAG_STRUCTURE = "FLAG_STRUCTURE",
@@ -23,6 +23,7 @@ declare global {
         readonly assignedRoom: Room | undefined;
         readonly remote: Remote<RoomObject>;
         readonly removed: boolean;
+        readonly structureType: StructureConstant;
         checkRemove(): boolean;
         update(): void;
     }
@@ -59,6 +60,22 @@ export function init() {
             get: function () {
                 if (this._type === undefined) parseName(this);
                 return this._type;
+            }
+        });
+    }
+
+    if (!Flag.prototype.structureType) {
+        Object.defineProperty(Flag.prototype, "structureType", {
+            get: function() {
+                if (this._structureType == undefined) {
+                    let strType = this.name.split(" ")[1].toLowerCase();
+                    switch (strType) {
+                        case "container": this._structureType = STRUCTURE_CONTAINER; break;
+                        case "road": this._structureType = STRUCTURE_ROAD; break;
+                        default: throw "Unknown structure type " + strType + " for flag " + this.name;
+                    }
+                }
+                return this._structureType;
             }
         });
     }
