@@ -12,6 +12,7 @@ import { employBuilders } from "./planning/builders";
 import { updateVisuals } from "./visuals";
 import { updateTickRate } from "./utils";
 import { employRepairers } from "./planning/repairers";
+import { assignTowers } from "./planning/towers";
 
 if (Config.USE_PROFILER) Profiler.enable();
 
@@ -37,11 +38,12 @@ function mloop() {
             try {
                 if (!room.controller || !room.controller.my) return;
 
-                room.casteTarget(Caste.STATIONARY_HARVESTER, 0);
-                room.casteTarget(Caste.WORKER, 2);
-                room.casteTarget(Caste.HAULER, 0);
+                room.casteTarget(Caste.STATIONARY_HARVESTER, 1);
+                room.casteTarget(Caste.WORKER, 0);
+                room.casteTarget(Caste.HAULER, 1);
 
                 _.forEach(room.assignedCreeps, (casteCreeps) => _.forEach(casteCreeps, (c) => { if (c.job) c.job.update(); }));
+                assignTowers(room);
 
                 let roomUncoveredSources = _.sortBy(_.filter(room.assignedSources, (s) => !s.covered), "container");
 
