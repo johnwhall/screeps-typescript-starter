@@ -13,6 +13,7 @@ import * as LocalExtensionModule from "./locals/local-extension";
 import * as LocalRoadModule from "./locals/local-road";
 import * as LocalWallModule from "./locals/local-wall";
 import * as LocalRampartModule from "./locals/local-rampart";
+import * as LocalTowerModule from "./locals/local-tower";
 
 export function init() {
     FlagModule.init();
@@ -30,4 +31,5 @@ export function init() {
     LocalRoadModule.init();
     LocalWallModule.init();
     LocalRampartModule.init();
+    LocalTowerModule.init();
 }

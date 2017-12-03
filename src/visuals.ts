@@ -13,6 +13,7 @@ export function updateVisuals() {
         if (room.storage) visualizeEnergy(room.visual, room.storage.remotable);
         for (let ext of room.extensions) visualizeEnergy(room.visual, ext);
         for (let spawn of room.spawns) visualizeEnergy(room.visual, spawn);
+        for (let tower of room.towers) visualizeEnergy(room.visual, tower);
 
         if (!room.memory.lastControllerProgress) room.memory.lastControllerProgress = room.controller.progress;
         var progPerTick = (room.controller.progress - room.memory.lastControllerProgress);

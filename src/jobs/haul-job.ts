@@ -1,5 +1,5 @@
 import { Job, JobTarget } from "./job";
-import { load as loadRemotable, isRemotableSource, RemotableEnergyStore, REMOTABLE_TYPE_SOURCE, RemotableContainer, RemotableStorage, RemotableSpawn, RemotableExtension } from "../remotables/remotable";
+import { load as loadRemotable, isRemotableSource, RemotableEnergyStore, REMOTABLE_TYPE_SOURCE, RemotableContainer, RemotableStorage, RemotableSpawn, RemotableExtension, RemotableTower } from "../remotables/remotable";
 
 enum Phase {
     MOVE_TO_ENERGY,
@@ -8,8 +8,8 @@ enum Phase {
     UNLOAD
 }
 
-export class HaulTarget extends JobTarget<StructureContainer | StructureStorage | StructureSpawn | StructureExtension, RemotableContainer | RemotableStorage | RemotableSpawn | RemotableExtension> {
-    constructor(site: RemotableContainer | RemotableStorage | RemotableSpawn | RemotableExtension, public remainingTransferAmount: number) { super(site); }
+export class HaulTarget extends JobTarget<StructureContainer | StructureStorage | StructureSpawn | StructureExtension | StructureTower, RemotableContainer | RemotableStorage | RemotableSpawn | RemotableExtension | RemotableTower> {
+    constructor(site: RemotableContainer | RemotableStorage | RemotableSpawn | RemotableExtension | RemotableTower, public remainingTransferAmount: number) { super(site); }
     save(): any { return { site: this.site.save(), remainingTransferAmount: this.remainingTransferAmount } }
     toString(): string { return `${this.site.toString()} (${this.remainingTransferAmount})` }
 }
@@ -66,7 +66,7 @@ export class HaulJob extends Job {
             this._targets = [];
             for (let i = 0; i < this.creep.memory.job.targets.length; i++) {
                 let target = <IHaulTargetMemory>this.creep.memory.job.targets[i];
-                let site = <RemotableContainer | RemotableStorage | RemotableSpawn | RemotableExtension | undefined>loadRemotable(target.savedSite, [STRUCTURE_CONTAINER, STRUCTURE_STORAGE, STRUCTURE_SPAWN, STRUCTURE_EXTENSION]);
+                let site = <RemotableContainer | RemotableStorage | RemotableSpawn | RemotableExtension | RemotableTower | undefined>loadRemotable(target.savedSite, [STRUCTURE_CONTAINER, STRUCTURE_STORAGE, STRUCTURE_SPAWN, STRUCTURE_EXTENSION, STRUCTURE_TOWER]);
                 if (site === undefined) throw new Error(`Missing site for ${JSON.stringify(target)}`);
                 this._targets.push(new HaulTarget(site, target.remainingTransferAmount));
             }

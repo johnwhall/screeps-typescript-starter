@@ -4,7 +4,7 @@ import { log } from "./lib/logger/log";
 
 import { init } from "./init";
 import { Caste } from "./caste";
-import { RemotableEnergyStore, RemotableContainer, RemotableStorage, RemotableSpawn, RemotableExtension, REMOTABLE_TYPE_SOURCE, RemotableWall, RemotableRampart } from "./remotables/remotable";
+import { RemotableEnergyStore, RemotableContainer, RemotableStorage, RemotableSpawn, RemotableExtension, REMOTABLE_TYPE_SOURCE, RemotableWall, RemotableRampart, RemotableTower } from "./remotables/remotable";
 import { employUpgraders } from "./planning/upgraders";
 import { employStationaryHarvesters } from "./planning/stationary-harvesters";
 import { employHaulers } from "./planning/haulers";
@@ -59,7 +59,7 @@ function mloop() {
 
                 // FILLERS
                 let fillerCreeps = room.assignedCreeps[Caste.HAULER].length === 0 ? unemployedWorkers : unemployedHaulers;
-                let fillTargets = _.filter((<(RemotableSpawn | RemotableExtension)[]>room.spawns).concat(room.extensions), (t) => t.plannedEnergyWithIncoming < t.energyCapacity);
+                let fillTargets = _.filter((<(RemotableSpawn | RemotableExtension | RemotableTower)[]>room.spawns).concat(room.extensions, room.towers), (t) => t.plannedEnergyWithIncoming < t.energyCapacity);
                 let fillEnergyStores = workerEnergyStores;
                 if (fillerCreeps === unemployedHaulers) fillEnergyStores = fillEnergyStores.filter((es) => es.type !== REMOTABLE_TYPE_SOURCE);
                 employHaulers(fillerCreeps, fillEnergyStores, fillTargets);
