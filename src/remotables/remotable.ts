@@ -13,7 +13,7 @@ export interface Remotable<T extends RoomObject> {
     save(): any;
 }
 
-declare type RemotableEnergyStoreTypes = Source | StructureContainer | StructureStorage | StructureSpawn;
+declare type RemotableEnergyStoreTypes = Source | StructureContainer | StructureStorage | StructureSpawn | StructureExtension;
 
 export interface RemotableEnergyStore<T extends RemotableEnergyStoreTypes = RemotableEnergyStoreTypes> extends Remotable<T>{
     readonly energy: number;
@@ -47,6 +47,7 @@ export interface RemotableContainer extends RemotableStructure<StructureContaine
 }
 
 export interface RemotableSpawn extends RemotableStructure<StructureSpawn, STRUCTURE_SPAWN>, RemotableEnergyStore<StructureSpawn> {}
+export interface RemotableExtension extends RemotableStructure<StructureExtension, STRUCTURE_EXTENSION>, RemotableEnergyStore<StructureExtension> {}
 
 export interface RemotableStorage extends RemotableStructure<StructureStorage, STRUCTURE_STORAGE>, RemotableEnergyStore<StructureStorage> {
     store: StoreDefinition;
