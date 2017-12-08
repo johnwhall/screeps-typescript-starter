@@ -41,3 +41,12 @@ export function updateTickRate() {
     Memory.avgTickRate = Memory.avgTickRate - Memory.avgTickRate / 100 + thisTickRate / 100;
     Memory.lastTickTime = curTickTime;
 }
+
+export function getLinearDistance(x1: number, y1: number, x2: number, y2: number): number {
+    return Math.max(Math.abs(x1 - x2), Math.abs(y1 - y2));
+}
+
+export function getLinearDistancePos(pos1: RoomPosition, pos2: RoomPosition): number {
+    if (pos1.roomName !== pos2.roomName) throw new Error(`positions ${pos1} and ${pos2} are in different rooms`);
+    return getLinearDistance(pos1.x, pos1.y, pos2.x, pos2.y);
+}

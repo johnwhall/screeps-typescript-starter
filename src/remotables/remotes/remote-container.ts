@@ -18,6 +18,7 @@ export class RemoteContainer extends RemoteStructure<StructureContainer, STRUCTU
 
     get store(): StoreDefinition {
         if (this._store === undefined) this._store = this.flag.memory.lastKnownStore;
+        if (this._store === undefined) this._store = <StoreDefinition>{};
         return this._store;
     }
 

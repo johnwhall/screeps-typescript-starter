@@ -1,6 +1,6 @@
 import { SpawnQueueItem } from "../spawn-queue-item";
 import { Caste, selectParts } from "../caste";
-import { RemotableSource, RemotableContainer, RemotableConstructionSite, RemotableSpawn, RemotableExtension, RemotableStructure, RemotableRampart, RemotableWall, RemotableTower } from "../remotables/remotable";
+import { RemotableSource, RemotableContainer, RemotableConstructionSite, RemotableSpawn, RemotableExtension, RemotableStructure, RemotableRampart, RemotableWall, RemotableTower, RemotableRoad } from "../remotables/remotable";
 import { FlagType } from "../flags/flag";
 import { nextUuid } from "../utils";
 
@@ -16,6 +16,7 @@ declare global {
         readonly extensions: RemotableExtension[];
         readonly towers: RemotableTower[];
         readonly assignedStructures: RemotableStructure[];
+        readonly assignedRoads: RemotableRoad[];
         readonly assignedWalls: RemotableWall[];
         readonly assignedRamparts: RemotableRampart[];
         spawnQueue: SpawnQueueItem[];
@@ -54,7 +55,7 @@ export function init() {
         Object.defineProperty(Room.prototype, "assignedFlags", {
             get: function () {
                 if (this._assignedFlags === undefined) {
-                    return _.filter(Game.flags, (f) => f.room == this && !f.removed);
+                    this._assignedFlags = _.filter(Game.flags, (f) => f.assignedRoom === this && !f.removed);
                 }
                 return this._assignedFlags;
             }
@@ -65,6 +66,7 @@ export function init() {
         Room.prototype.assignedFlagRemoved = function (flag: Flag): void {
             // Only handle this if _assignedFlags has been loaded
             // If it hasn't been loaded yet, Flag.removed will prevent removed flags from being loaded
+            console.log("assignedFlagRemoved");
             if (this._assignedFlags !== undefined) {
                 let idx = this._assignedFlags.indexOf(flag);
                 if (idx >= 0) this._assignedFlags.splice(idx, 1);
@@ -155,6 +157,15 @@ export function init() {
                     this._assignedStructures = _.unique(roomStructures.concat(flagStructures));
                 }
                 return this._assignedStructures;
+            }
+        });
+    }
+
+    if (!Room.prototype.assignedRoads) {
+        Object.defineProperty(Room.prototype, "assignedRoads", {
+            get: function() {
+                if (this._assignedRoads === undefined) this._assignedRoads = _.filter(<RemotableStructure[]>this.assignedStructures, (s) => s.structureType === STRUCTURE_ROAD);
+                return this._assignedRoads;
             }
         });
     }

@@ -118,7 +118,24 @@ export class BuildJob extends Job {
                     return this.targetFinished();
                 }
 
-                if (this.creep.build(<ConstructionSite>this.targets[0].actual.site.liveObject) === OK) {
+                if (this.creep.pos.isEqualTo(<RoomPosition>this.targets[0].pos)) {
+                    // This creep is standing on the construction site.  It must move before any build progress can be made.
+                    for (let x = -1; x <= 1; x++) {
+                        for (let y = -1; y <= 1; y++) {
+                            if (x === 0 && y === 0) continue;
+                            x += this.creep.pos.x;
+                            y += this.creep.pos.y;
+                            if (Game.map.getTerrainAt(x, y, this.creep.room.name) !== "plain") continue;
+                            if (new RoomPosition(x, y, this.creep.room.name).lookFor(LOOK_STRUCTURES).length !== 0) continue;
+                            if (this.creep.moveTo(x, y) === OK) return true;
+                        }
+                    }
+                    console.log(`${this.creep.name} stuck on top of construction site ${this.targets[0]} - suiciding`);
+                    this.creep.suicide(); // avoid blocking other creeps
+                }
+
+                let ret = this.creep.build(<ConstructionSite>this.targets[0].actual.site.liveObject);
+                if (ret === OK) {
                     this.creep.memory.job.targets[0].myRemainingProgress -= this.creep.buildPower(this.creep.carry.energy);
                     return true;
                 }

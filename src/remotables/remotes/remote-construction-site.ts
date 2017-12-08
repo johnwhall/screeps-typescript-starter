@@ -13,7 +13,7 @@ export class RemoteConstructionSite extends Remote<ConstructionSite> implements 
         if (liveObject !== undefined) this._local = new LocalConstructionSite(liveObject);
     }
 
-    get liveObject(): ConstructionSite { return this._local.liveObject; }
+    get liveObject(): ConstructionSite | undefined { return this._local === undefined ? undefined : this._local.liveObject; }
     get progress(): number { return this._local.progress; }
     get progressTotal(): number { return this._local.progressTotal; }
     get plannedProgress(): number { return this._local.plannedProgress; }
@@ -21,5 +21,8 @@ export class RemoteConstructionSite extends Remote<ConstructionSite> implements 
     get structureType(): StructureConstant { return this._local.structureType; }
     shouldRemove(): boolean { return this._local === undefined; }
     update(): void { super.update(); }
-    toString(): string { return `[remote ${this._local.toString().slice(1)}`; }
+    toString(): string {
+        if (this._local === undefined) return '[remote construction site (missing)]';
+        return `[remote ${this._local.toString().slice(1)}`;
+    }
 }
