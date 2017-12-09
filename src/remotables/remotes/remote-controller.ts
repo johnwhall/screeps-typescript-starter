@@ -1,22 +1,33 @@
 import { RemoteStructure } from "./remote-structure";
 import { RemotableController } from "../remotable";
-import { LocalController } from "../locals/local-controller";
 
-// Controllers are either visible or not mine (in which case, the remote should be deleted), so this is just a wrapper for a LocalController
+interface ReservationInfo {
+    reservation: ReservationDefinition;
+    lastUpdateTime: number;
+}
+
 export class RemoteController extends RemoteStructure<StructureController, STRUCTURE_CONTROLLER> implements RemotableController {
     readonly type = STRUCTURE_CONTROLLER;
     readonly structureType: STRUCTURE_CONTROLLER = STRUCTURE_CONTROLLER;
-    private _local: LocalController;
+    claimPlanned: boolean = false;
 
-    constructor(flag: Flag) {
-        super(flag);
-        let liveObject = flag.room ? flag.room.controller : undefined;
-        if (liveObject !== undefined) this._local = new LocalController(liveObject);
+    get liveObject(): StructureController | undefined {
+        if (this.room === undefined) return undefined;
+        else return this.room.controller;
     }
 
-    get liveObject(): StructureController { return this._local.liveObject; }
-    get my(): boolean { return this._local.liveObject.my; }
-    shouldRemove(): boolean { return this._local === undefined || !this._local.my; }
-    update(): void { super.update(); }
-    toString(): string { return `[remote ${this._local.toString().slice(1)}`; }
+    get my(): boolean { return this.liveObject ? this.liveObject.my : false; } // TODO: test - this is undefined if controller is neither owned nor reserved
+
+    get reservation(): ReservationDefinition | undefined {
+        let info: ReservationInfo | undefined = this.flag.memory.reservationInfo;
+        if (info === undefined) return undefined;
+        let ticksSinceUpdate = Game.time - info.lastUpdateTime;
+        if (ticksSinceUpdate >= info.reservation.ticksToEnd) return undefined;
+        return { username: info.reservation.username, ticksToEnd: info.reservation.ticksToEnd - ticksSinceUpdate };
+    }
+
+    update(): void {
+        super.update();
+        if (this.liveObject && this.liveObject.reservation) this.flag.memory.reservationInfo = { lastUpdateTime: Game.time, reservation: this.liveObject.reservation }
+    }
 }

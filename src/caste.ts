@@ -2,7 +2,8 @@ export enum Caste {
     WORKER = "WORKER",
     STATIONARY_HARVESTER = "STATIONARY_HARVESTER",
     HAULER = "HAULER",
-    SCOUT = "SCOUT"
+    SCOUT = "SCOUT",
+    CLAIMER = "CLAIMER"
 }
 
 export let PartOrders: { [C in Caste]:BodyPartConstant[] } = {
@@ -11,6 +12,7 @@ export let PartOrders: { [C in Caste]:BodyPartConstant[] } = {
     STATIONARY_HARVESTER: [ MOVE, WORK, WORK, WORK, WORK, WORK, WORK, CARRY ],
     HAULER: [ MOVE, CARRY, CARRY, MOVE, CARRY, CARRY, MOVE, CARRY, CARRY, MOVE, CARRY, CARRY, MOVE, CARRY, CARRY ],
     SCOUT: [ MOVE ],
+    CLAIMER: [ MOVE, CLAIM, CLAIM ],
 }
 
 export function selectParts(caste: Caste, energyAvailable: number): BodyPartConstant[] {

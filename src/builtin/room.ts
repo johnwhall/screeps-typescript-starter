@@ -1,6 +1,6 @@
 import { SpawnQueueItem } from "../spawn-queue-item";
 import { Caste, selectParts } from "../caste";
-import { RemotableSource, RemotableContainer, RemotableConstructionSite, RemotableSpawn, RemotableExtension, RemotableStructure, RemotableRampart, RemotableWall, RemotableTower, RemotableRoad } from "../remotables/remotable";
+import { RemotableSource, RemotableContainer, RemotableConstructionSite, RemotableSpawn, RemotableExtension, RemotableStructure, RemotableRampart, RemotableWall, RemotableTower, RemotableRoad, RemotableController } from "../remotables/remotable";
 import { FlagType } from "../flags/flag";
 import { nextUuid } from "../utils";
 
@@ -19,6 +19,7 @@ declare global {
         readonly assignedRoads: RemotableRoad[];
         readonly assignedWalls: RemotableWall[];
         readonly assignedRamparts: RemotableRampart[];
+        readonly assignedClaimControllers: RemotableController[];
         spawnQueue: SpawnQueueItem[];
         rampWallUnderRepair: boolean;
         assignedFlagRemoved(flag: Flag): void;
@@ -118,7 +119,7 @@ export function init() {
 
     if (!Room.prototype.spawns) {
         Object.defineProperty(Room.prototype, "spawns", {
-            get: function() {
+            get: function () {
                 if (this._spawns === undefined) this._spawns = _.pluck(this.find(FIND_MY_SPAWNS), "remotable");
                 return this._spawns;
             }
@@ -127,7 +128,7 @@ export function init() {
 
     if (!Room.prototype.extensions) {
         Object.defineProperty(Room.prototype, "extensions", {
-            get: function() {
+            get: function () {
                 if (this._extensions === undefined) {
                     this._extensions = _.pluck(this.find(FIND_MY_STRUCTURES, { filter: (s: Structure) => s.structureType === STRUCTURE_EXTENSION }), "remotable");
                 }
@@ -138,7 +139,7 @@ export function init() {
 
     if (!Room.prototype.towers) {
         Object.defineProperty(Room.prototype, "towers", {
-            get: function() {
+            get: function () {
                 if (this._towers === undefined) {
                     this._towers = _.pluck(this.find(FIND_MY_STRUCTURES, { filter: (s: Structure) => s.structureType === STRUCTURE_TOWER }), "remotable");
                 }
@@ -149,9 +150,9 @@ export function init() {
 
     if (!Room.prototype.assignedStructures) {
         Object.defineProperty(Room.prototype, "assignedStructures", {
-            get: function() {
+            get: function () {
                 if (this._assignedStructures === undefined) {
-                    const implementedTypes = [ STRUCTURE_CONTAINER, STRUCTURE_CONTROLLER, STRUCTURE_EXTENSION, STRUCTURE_SPAWN, STRUCTURE_STORAGE, STRUCTURE_ROAD, STRUCTURE_WALL, STRUCTURE_RAMPART, STRUCTURE_TOWER ];
+                    const implementedTypes = [STRUCTURE_CONTAINER, STRUCTURE_CONTROLLER, STRUCTURE_EXTENSION, STRUCTURE_SPAWN, STRUCTURE_STORAGE, STRUCTURE_ROAD, STRUCTURE_WALL, STRUCTURE_RAMPART, STRUCTURE_TOWER];
                     let roomStructures = _.pluck(this.find(FIND_STRUCTURES, { filter: (s: Structure) => _.contains(implementedTypes, s.structureType) }), "remotable");
                     let flagStructures = _.pluck(this.assignedFlags.filter((f: Flag) => f.type === FlagType.FLAG_STRUCTURE && _.contains(implementedTypes, f.structureType)), "remote");
                     this._assignedStructures = _.unique(roomStructures.concat(flagStructures));
@@ -163,7 +164,7 @@ export function init() {
 
     if (!Room.prototype.assignedRoads) {
         Object.defineProperty(Room.prototype, "assignedRoads", {
-            get: function() {
+            get: function () {
                 if (this._assignedRoads === undefined) this._assignedRoads = _.filter(<RemotableStructure[]>this.assignedStructures, (s) => s.structureType === STRUCTURE_ROAD);
                 return this._assignedRoads;
             }
@@ -172,7 +173,7 @@ export function init() {
 
     if (!Room.prototype.assignedWalls) {
         Object.defineProperty(Room.prototype, "assignedWalls", {
-            get: function() {
+            get: function () {
                 if (this._assignedWalls === undefined) this._assignedWalls = _.filter(<RemotableStructure[]>this.assignedStructures, (s) => s.structureType === STRUCTURE_WALL);
                 return this._assignedWalls;
             }
@@ -181,9 +182,20 @@ export function init() {
 
     if (!Room.prototype.assignedRamparts) {
         Object.defineProperty(Room.prototype, "assignedRamparts", {
-            get: function() {
+            get: function () {
                 if (this._assignedRamparts === undefined) this._assignedRamparts = _.filter(<RemotableStructure[]>this.assignedStructures, (s) => s.structureType === STRUCTURE_RAMPART);
                 return this._assignedRamparts;
+            }
+        });
+    }
+
+    if (!Room.prototype.assignedClaimControllers) {
+        Object.defineProperty(Room.prototype, "assignedClaimControllers", {
+            get: function () {
+                if (this._assignedClaimControllers === undefined) {
+                    this._assignedClaimControllers = _.filter(<RemotableStructure[]>this.assignedStructures, (s) => s.structureType === STRUCTURE_CONTROLLER && s.pos.roomName !== this.name);
+                }
+                return this._assignedClaimControllers;
             }
         });
     }
@@ -229,6 +241,7 @@ export function init() {
             _.forEach(Caste, (caste) => {
                 let target = this.casteTarget(caste);
                 let ownedOrQueuedCount = (ownedCreeps[caste] || []).length + (queuedCreeps[caste] || []).length;
+                // console.log(`caste: ${caste} target: ${target} ownedOrQueuedCount: ${ownedOrQueuedCount}`);
                 while (ownedOrQueuedCount < target) {
                     let sqi = new SpawnQueueItem(caste, this.name, selectParts(caste, this.energyCapacityAvailable));
                     this.spawnQueue.push(sqi);

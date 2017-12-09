@@ -61,6 +61,8 @@ export interface RemotableStorage extends RemotableStructure<StructureStorage, S
 
 export interface RemotableController extends RemotableStructure<StructureController, STRUCTURE_CONTROLLER> {
     readonly my: boolean;
+    claimPlanned: boolean;
+    reservation: ReservationDefinition | undefined;
 }
 
 declare global {

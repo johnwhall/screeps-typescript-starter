@@ -4,6 +4,7 @@ import { UpgradeJob } from "./upgrade-job";
 import { BuildJob } from "./build-job";
 import { HaulJob } from "./haul-job";
 import { RepairJob } from "./repair-job";
+import { ReserveJob } from "./reserve-job";
 
 export function loadJob(creep: Creep): Job {
     switch (creep.memory.job.name) {
@@ -17,6 +18,8 @@ export function loadJob(creep: Creep): Job {
             return HaulJob.load(creep);
         case "upgrade":
             return UpgradeJob.load(creep);
+        case "reserve":
+            return ReserveJob.load(creep);
         default:
             throw `Unknown job name ${creep.memory.job.name} for creep ${creep.name}`;
     }

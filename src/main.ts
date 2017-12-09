@@ -4,7 +4,7 @@ import { log } from "./lib/logger/log";
 
 import { init } from "./init";
 import { Caste } from "./caste";
-import { RemotableEnergyStore, RemotableContainer, RemotableStorage, RemotableSpawn, RemotableExtension, REMOTABLE_TYPE_SOURCE, RemotableWall, RemotableRampart, RemotableTower } from "./remotables/remotable";
+import { RemotableEnergyStore, RemotableContainer, RemotableStorage, RemotableSpawn, RemotableExtension, REMOTABLE_TYPE_SOURCE, RemotableWall, RemotableRampart, RemotableTower, RemotableController } from "./remotables/remotable";
 import { employUpgraders } from "./planning/upgraders";
 import { employStationaryHarvesters } from "./planning/stationary-harvesters";
 import { employHaulers } from "./planning/haulers";
@@ -13,6 +13,7 @@ import { updateVisuals } from "./visuals";
 import { updateTickRate } from "./utils";
 import { employRepairers } from "./planning/repairers";
 import { assignTowers } from "./planning/towers";
+import { employReservers } from "./planning/reservers";
 
 if (Config.USE_PROFILER) Profiler.enable();
 
@@ -41,6 +42,7 @@ function mloop() {
                 room.casteTarget(Caste.STATIONARY_HARVESTER, room.assignedSources.length);
                 room.casteTarget(Caste.WORKER, 3);
                 room.casteTarget(Caste.HAULER, room.assignedSources.length);
+                room.casteTarget(Caste.CLAIMER, room.assignedClaimControllers.length);
 
                 _.forEach(room.assignedCreeps, (casteCreeps) => _.forEach(casteCreeps, (c) => { if (c.job) c.job.update(); }));
                 assignTowers(room);
@@ -50,6 +52,7 @@ function mloop() {
                 let unemployedStationaryHarvesters = _.filter(room.assignedCreeps[Caste.STATIONARY_HARVESTER], (c: Creep) => !c.job);
                 let unemployedHaulers = _.filter(room.assignedCreeps[Caste.HAULER], (c: Creep) => !c.job);
                 let unemployedWorkers = _.filter(room.assignedCreeps[Caste.WORKER], (c: Creep) => !c.job);
+                let unemployedClaimers = _.filter(room.assignedCreeps[Caste.CLAIMER], (c: Creep) => !c.job);
 
                 // STATIONARY HARVESTERS
                 employStationaryHarvesters(unemployedStationaryHarvesters, roomUncoveredSources);
@@ -90,6 +93,10 @@ function mloop() {
 
                 // UPGRADERS
                 employUpgraders(room, unemployedWorkers, workerEnergyStores);
+
+                // RESERVERS
+                let reserveTargets = _.filter(room.assignedClaimControllers, (c: RemotableController) => !c.claimPlanned && (!c.reservation || c.reservation.ticksToEnd < 4500));
+                employReservers(unemployedClaimers, reserveTargets);
 
                 room.queueFromTargets();
                 room.spawnFromQueue();
