@@ -15,11 +15,14 @@ export function employRepairers(room: Room, unemployedWorkers: Creep[], energySt
         while (capacity > 0 && repairTargets.length > 0) {
             let target = searchOrigin.findClosestByPath([repairTargets[0]]);
             if (!target) break;
-            let energyRequired = Math.min((target.hitsMax - target.plannedHits) * REPAIR_COST, capacity); // TODO: account for boosts
-            targets.push(new RepairTarget(target, energyRequired / REPAIR_COST)); // TODO: account for boosts
+            let hitsToRepair = target.hitsMax - target.plannedHits;
+            if (hitsToRepair * REPAIR_COST > capacity) hitsToRepair = capacity / REPAIR_COST;
+            // The game appears to use Math.floor some (perhaps all) of the time, but I will use Math.ceil for safety
+            let energyRequired = Math.ceil(hitsToRepair * REPAIR_COST); // TODO: account for boosts
+            targets.push(new RepairTarget(target, hitsToRepair));
             capacity -= energyRequired;
             totalEnergyRequired += energyRequired;
-            if (target.plannedHits + energyRequired / REPAIR_COST >= target.hitsMax || target.structureType === STRUCTURE_WALL || target.structureType === STRUCTURE_RAMPART) {
+            if (target.plannedHits + hitsToRepair >= target.hitsMax || target.structureType === STRUCTURE_WALL || target.structureType === STRUCTURE_RAMPART) {
                 repairTargets.splice(0, 1);
             }
             searchOrigin = target.pos;

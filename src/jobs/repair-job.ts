@@ -28,7 +28,7 @@ class RepairTargetMemory implements IRepairTargetMemory {
 export class RepairJob extends Job {
     private _energyStore: RemotableEnergyStore;
     private _targets: RepairTarget[];
-    private _totalRemainingRepairAmount: number;
+    private _totalRemainingEnergyRequirement: number | undefined;
 
     static newJob(creep: Creep, energyStore: RemotableEnergyStore, targets: RepairTarget[]): RepairJob {
         try {
@@ -122,18 +122,13 @@ export class RepairJob extends Job {
         return this.targets.length !== 0;
     }
 
-    get totalRemainingRepairAmount(): number {
-        if (this._totalRemainingRepairAmount === undefined) {
-            let trp = 0;
-            for (let i = 0; i < this.targets.length; i++) trp += this.targets[i].remainingRepairAmount;
-            return trp;
-        }
-        return this._totalRemainingRepairAmount;
-    }
-
     get totalRemainingEnergyRequirement(): number {
-        if (this.phase > Phase.LOAD) return 0;
-        return this.totalRemainingRepairAmount * REPAIR_COST; // TODO: account for boosts
+        if (this._totalRemainingEnergyRequirement === undefined) {
+            this._totalRemainingEnergyRequirement = 0;
+            // The game appears to use Math.floor some (perhaps all) of the time, but I will use Math.ceil for safety
+            for (let i = 0; i < this.targets.length; i++) this._totalRemainingEnergyRequirement += Math.ceil(this.targets[i].remainingRepairAmount * REPAIR_COST);
+        }
+        return this._totalRemainingEnergyRequirement;
     }
 
     update(): void {
